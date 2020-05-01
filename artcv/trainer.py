@@ -156,10 +156,8 @@ class Trainer:
         plt.show()
 
     @torch.no_grad()
-    def make_predictions(self, tag,
-                         thre=(0.09, 0.09, 0.09, 0.09),
-                         boundary=([0, 100], [100, 781], [786, 2706], [2706, 3474])):
-        assert len(thre) == len (boundary)
+    def get_probs(self, tag, test=False,
+                  boundary=([0, 100], [100, 781], [786, 2706], [2706, 3474])):
         predictions_tem = []
         ground_truth = []
         if tag == 'train':
@@ -171,26 +169,40 @@ class Trainer:
         else:
             raise ValueError('Invalid tag!')
         for data_tensors in _dataloader:
-            x, y0, y1, y2, y3, y4 = data_tensors
-            ground_truth += [torch.cat((y0.long().cpu(),
-                                        y1.long().cpu(),
-                                        F.one_hot(y2, num_classes=6).squeeze()[:, 1:].long().cpu(),
-                                        y3.long().cpu(),
-                                        y4.long().cpu()), dim=1)]
+            if not test:
+                x, y0, y1, y2, y3, y4 = data_tensors
+                ground_truth += [torch.cat((y0.long().cpu(),
+                                            y1.long().cpu(),
+                                            F.one_hot(y2, num_classes=6).squeeze()[:, 1:].long().cpu(),
+                                            y3.long().cpu(),
+                                            y4.long().cpu()), dim=1)]
+            else:
+                x = data_tensors
             if self.use_cuda and torch.cuda.is_available():
                 x = x.cuda()
             y_concat_prob = self.model.get_concat_probs(x)
             predictions_tem += [y_concat_prob.cpu()]
         predictions_array = torch.cat(predictions_tem).detach().numpy()
+        if not test:
+            return torch.cat(ground_truth).detach().numpy(), predictions_array
+        else:
+            return predictions_array
+    
+    @torch.no_grad()
+    def make_predictions(self, tag,
+                         thre=(0.09, 0.09, 0.09, 0.09),
+                         boundary=([0, 100], [100, 781], [786, 2706], [2706, 3474])):
+        assert len(thre) == len (boundary)
+        ground_truth, predictions_array = self.get_probs(tag=tag, boundary=boundary)
         predictions = np.zeros(predictions_array.shape, dtype='int')
 
         for i in range(len(boundary)):
             predictions[:, boundary[i][0]: boundary[i][1]][predictions_array[:, boundary[i][0]: boundary[i][1]] > thre[i]] = 1
-        return torch.cat(ground_truth).detach().numpy(), predictions
+        return ground_truth, predictions
 
     @torch.no_grad()
-    def compute_accuracy(self, tag):
-        y_true, y_pred = self.make_predictions(tag=tag)
+    def compute_accuracy(self, tag, thre=(0.09, 0.09, 0.09, 0.09)):
+        y_true, y_pred = self.make_predictions(tag=tag, thre=thre)
         f_beta = [fbeta_score(y_true[i,:], y_pred[i,:], beta=2) for i in range(y_true.shape[0])]
         return sum(f_beta)/len(f_beta)
 

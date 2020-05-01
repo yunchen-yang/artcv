@@ -140,7 +140,7 @@ cython_debug/
 # Other
 test/
 train/
-
+weights/
 
 # PyCharm IDE files
 .idea/
