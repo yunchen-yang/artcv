@@ -74,4 +74,7 @@ class ArtCV(nn.Module):
 
     def get_concat_probs(self, x):
         y_pred0, y_pred1, y_pred2, y_pred3, y_pred4 = self.get_probs(x)
-        return torch.cat((y_pred0, y_pred1, y_pred2[:, 1:], y_pred3, y_pred4), dim=1)
+
+        return torch.cat((y_pred0, y_pred1,
+                          F.one_hot(y_pred2.argmax(axis=-1), num_classes=self.num_labels[2])[:, 1:],
+                          y_pred3, y_pred4), dim=1)
