@@ -28,7 +28,7 @@ class ResNet_CNN(ResNet):
 
 
 class Classifier(nn.Module):
-    def __init__(self, dim_in, dim_out, dim_hidden, n_layers, task='ml', use_batch_norm=True, dropout_rate=0.05):
+    def __init__(self, dim_in, dim_out, dim_hidden, n_layers, task='ml', use_batch_norm=True, dropout_rate=0.01):
         super().__init__()
         dims = [dim_in] + [dim_hidden]*(n_layers-1) + [dim_out]
         self.task = task
@@ -39,7 +39,7 @@ class Classifier(nn.Module):
             [('Layer {}'.format(i), nn.Sequential(
                 nn.Linear(n_in, n_out),
                 nn.BatchNorm1d(n_out, momentum=.01, eps=0.001) if self.use_batch_norm else None,
-                nn.ReLU(),
+                nn.ReLU() if i != len(dims)-2 else None,
                 nn.Dropout(p=self.dropout_rate) if self.dropout_rate > 0 else None))
              for i, (n_in, n_out) in enumerate(zip(dims[:-1], dims[1:]))])))
 
