@@ -69,7 +69,7 @@ class Trainer:
     def after_iter(self):
         pass
 
-    def train(self, parameters=None, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0,
+    def train(self, parameters=None, lr=1e-2, betas=(0.9, 0.999), eps=1e-8, weight_decay=0,
               grad_clip=False, max_norm=1e-5):
         epochs = self.epochs
         self.model.train()
