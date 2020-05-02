@@ -124,7 +124,7 @@ def labels_list2array(y_list, length_list, task):
         if task[idx_list[0]] != 'mc':
             y_dict[idx_list[0]][idx_list[1]] = 1
         else:
-            y_dict[idx_list[0]][0] = idx_list[1]
+            y_dict[idx_list[0]][0] = idx_list[1]+1
 
     return y_dict
 
