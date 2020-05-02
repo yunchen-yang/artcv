@@ -14,7 +14,8 @@ from tqdm import trange
 class Trainer:
     def __init__(self, model, dataset, use_cuda=True,
                  shuffle=True, epochs=100, batch_size_train=64,
-                 monitor_frequency=5, printout=False, batch_size_val=64,
+                 monitor_frequency=5, compute_acc=True, printout=False,
+                 thre=(0.09, 0.09, 0.09, 0.09), batch_size_val=64,
                  dataloader_train_kwargs=dict(), dataloader_val_kwargs=dict(),
                  batch_size_all=64, dataloader_all_kwargs=dict()):
         self.model = model
@@ -58,7 +59,9 @@ class Trainer:
         if self.use_cuda:
             self.model.cuda()
         self.monitor_frequency = monitor_frequency
+        self.compute_acc=compute_acc
         self.printout = printout
+        self.thre = thre
 
     def before_iter(self):
         pass
@@ -88,14 +91,16 @@ class Trainer:
                     optim.step()
                 if (epoch_idx + 1) % self.monitor_frequency == 0:
                     current_loss_train = self.compute_loss(tag='train')
-                    current_accuracy_train = self.compute_accuracy(tag='train')
                     self.loss_history_train.append(current_loss_train)
-                    self.accuracy_history_train.append(current_accuracy_train)
+                    if self.compute_acc:
+                        current_accuracy_train = self.compute_accuracy(tag='train')
+                        self.accuracy_history_train.append(current_accuracy_train)
                     if self.train_val:
                         current_loss_val = self.compute_loss(tag='val')
-                        current_accuracy_val = self.compute_accuracy(tag='val')
                         self.loss_history_val.append(current_loss_val)
-                        self.accuracy_history_val.append(current_accuracy_val)
+                        if self.compute_acc:
+                            current_accuracy_val = self.compute_accuracy(tag='val')
+                            self.accuracy_history_val.append(current_accuracy_val)
                     if self.printout:
                         print("After %i epochs, loss is %f and prediction accuracy is %f."
                               % (epoch_idx, current_loss_train, current_accuracy_train))
@@ -188,10 +193,9 @@ class Trainer:
             return predictions_array
     
     @torch.no_grad()
-    def make_predictions(self, tag,
-                         thre=(0.09, 0.09, 0.09, 0.09),
+    def make_predictions(self, tag, thre,
                          boundary=([0, 100], [100, 781], [786, 2706], [2706, 3474])):
-        assert len(thre) == len (boundary)
+        assert len(thre) == len(boundary)
         ground_truth, predictions_array = self.get_probs(tag=tag, boundary=boundary)
         predictions = np.zeros(predictions_array.shape, dtype='int')
 
@@ -200,8 +204,8 @@ class Trainer:
         return ground_truth, predictions
 
     @torch.no_grad()
-    def compute_accuracy(self, tag, thre=(0.09, 0.09, 0.09, 0.09)):
-        y_true, y_pred = self.make_predictions(tag=tag, thre=thre)
+    def compute_accuracy(self, tag):
+        y_true, y_pred = self.make_predictions(tag=tag, thre=self.thre)
         f_beta = [fbeta_score(y_true[i,:], y_pred[i,:], beta=2) for i in range(y_true.shape[0])]
         return sum(f_beta)/len(f_beta)
 
