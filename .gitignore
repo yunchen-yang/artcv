@@ -141,7 +141,7 @@ cython_debug/
 test/
 train/
 weights/
-.ipynb
+*.ipynb
 
 # PyCharm IDE files
 .idea/
