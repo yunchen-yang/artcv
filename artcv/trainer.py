@@ -156,8 +156,7 @@ class Trainer:
         plt.show()
 
     @torch.no_grad()
-    def get_probs(self, tag, test=False,
-                  boundary=([0, 100], [100, 781], [786, 2706], [2706, 3474])):
+    def get_probs(self, tag, test=False):
         predictions_tem = []
         ground_truth = []
         if tag == 'train':
