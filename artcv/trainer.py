@@ -15,7 +15,7 @@ class Trainer:
     def __init__(self, model, dataset, use_cuda=True,
                  shuffle=True, epochs=100, batch_size_train=64,
                  monitor_frequency=5, compute_acc=True, printout=False,
-                 thre=(0.09, 0.09, 0.09, 0.09), batch_size_val=64,
+                 thre=(0.1, 0.1, 0.1, 0.1), batch_size_val=64,
                  dataloader_train_kwargs=dict(), dataloader_val_kwargs=dict(),
                  batch_size_all=64, dataloader_all_kwargs=dict()):
         self.model = model
@@ -196,7 +196,7 @@ class Trainer:
     def make_predictions(self, tag, thre,
                          boundary=([0, 100], [100, 781], [786, 2706], [2706, 3474])):
         assert len(thre) == len(boundary)
-        ground_truth, predictions_array = self.get_probs(tag=tag, boundary=boundary)
+        ground_truth, predictions_array = self.get_probs(tag=tag)
         predictions = np.zeros(predictions_array.shape, dtype='int')
 
         for i in range(len(boundary)):

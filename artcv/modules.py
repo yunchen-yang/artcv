@@ -34,22 +34,25 @@ class Classifier(nn.Module):
         self.task = task
         self.use_batch_norm = use_batch_norm
         self.dropout_rate = dropout_rate
-        self.classifier = nn.Sequential(
-            nn.Sequential(collections.OrderedDict(
+        self.classifier = nn.Sequential(collections.OrderedDict(
             [('Layer {}'.format(i), nn.Sequential(
                 nn.Linear(n_in, n_out),
                 nn.BatchNorm1d(n_out, momentum=.01, eps=0.001) if self.use_batch_norm else None,
                 nn.ReLU() if i != len(dims)-2 else None,
                 nn.Dropout(p=self.dropout_rate) if self.dropout_rate > 0 else None))
-             for i, (n_in, n_out) in enumerate(zip(dims[:-1], dims[1:]))])))
+             for i, (n_in, n_out) in enumerate(zip(dims[:-1], dims[1:]))]))
 
     def get_logits(self, x):
-        return self.classifier(x)
+        for layers in self.classifier:
+            for layer in layers:
+                if layer is not None:
+                    x = layer(x)
+        return x
 
     def forward(self, x):
         if self.task == 'mc':
-            return F.softmax(self.classifier(x), dim=-1)
+            return F.softmax(self.get_logits(x), dim=-1)
         elif self.task == 'ml':
-            return torch.sigmoid(self.classifier(x))
+            return torch.sigmoid(self.get_logits(x))
         else:
             raise ValueError("The task tag must be either 'ml' (multi-label) or 'mc' (multi-class)!")
