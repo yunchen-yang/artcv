@@ -23,7 +23,8 @@ LAYERS = {'18': [2, 2, 2, 2],
 class ArtCV(nn.Module):
     def __init__(self, tag='18', num_labels=(100, 681, 6, 1920, 768),
                  classifier_layers=(1, 1, 1, 1, 1), classifier_hidden=(2048, 2048, 2048, 2048, 2048),
-                 task=('ml', 'ml', 'mc', 'ml', 'ml'), weights=(1, 1, 1, 1, 1)):
+                 task=('ml', 'ml', 'mc', 'ml', 'ml'), weights=(1, 1, 1, 1, 1),
+                 use_batch_norm=True, dropout_rate=0.01):
         super().__init__()
         self.tag = tag
         self.num_labels = num_labels
@@ -31,6 +32,8 @@ class ArtCV(nn.Module):
         self.classifier_hidden = classifier_hidden
         self.task = task
         self.weights = weights
+        self.use_batch_norm = use_batch_norm
+        self.dropout_rate = dropout_rate
 
         self.cnn = ResNet_CNN(getattr(resnet, BLOCK[tag]), LAYERS[tag])
         self.classifiers = nn.ModuleDict(
@@ -39,7 +42,9 @@ class ArtCV(nn.Module):
                                                        dim_out=self.num_labels[i],
                                                        dim_hidden=self.classifier_hidden[i],
                                                        n_layers=self.classifier_layers[i],
-                                                       task=self.task[i]))
+                                                       task=self.task[i],
+                                                       use_batch_norm=self.use_batch_norm,
+                                                       dropout_rate=self.dropout_rate))
                  for i in range(len(self.num_labels))]))
 
     def inference(self, x):
@@ -76,5 +81,5 @@ class ArtCV(nn.Module):
         y_pred0, y_pred1, y_pred2, y_pred3, y_pred4 = self.get_probs(x)
 
         return torch.cat((y_pred0, y_pred1,
-                          F.one_hot(y_pred2.argmax(axis=-1), num_classes=self.num_labels[2])[:, 1:],
+                          F.one_hot(y_pred2.argmax(axis=-1), num_classes=self.num_labels[2]).float()[:, 1:],
                           y_pred3, y_pred4), dim=1)
