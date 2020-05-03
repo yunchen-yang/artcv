@@ -6,8 +6,11 @@ import torch.nn.functional as F
 
 
 class ResNet_CNN(ResNet):
-    def __init__(self, block, layers, **kwargs):
+    def __init__(self, block, layers, weight_path, **kwargs):
         super().__init__(block, layers, **kwargs)
+        self.weight_path = weight_path
+        if self.weight_path is not None:
+            self.load_state_dict(torch.load(self.weight_path))
         del self.fc
 
     def forward(self, x):

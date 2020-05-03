@@ -142,6 +142,7 @@ test/
 train/
 weights/
 *.ipynb
+pretrained/
 
 # PyCharm IDE files
 .idea/
