@@ -24,7 +24,8 @@ class ArtCV(nn.Module):
     def __init__(self, tag='18', num_labels=(100, 681, 6, 1920, 768),
                  classifier_layers=(1, 1, 1, 1, 1), classifier_hidden=(2048, 2048, 2048, 2048, 2048),
                  task=('ml', 'ml', 'mc', 'ml', 'ml'), weights=(1, 1, 1, 1, 1),
-                 use_batch_norm=True, dropout_rate=0.01):
+                 use_batch_norm=True, dropout_rate=0.01,
+                 weight_path=None, freeze_cnn=False):
         super().__init__()
         self.tag = tag
         self.num_labels = num_labels
@@ -34,8 +35,13 @@ class ArtCV(nn.Module):
         self.weights = weights
         self.use_batch_norm = use_batch_norm
         self.dropout_rate = dropout_rate
+        self.weight_path = weight_path
+        self.freeze_cnn = freeze_cnn
 
-        self.cnn = ResNet_CNN(getattr(resnet, BLOCK[tag]), LAYERS[tag])
+        self.cnn = ResNet_CNN(getattr(resnet, BLOCK[tag]), LAYERS[tag], self.weight_path)
+        if self.freeze_cnn:
+            for p in self.cnn.parameters():
+                p.requires_grad = False
         self.classifiers = nn.ModuleDict(
             collections.OrderedDict(
                 [('classifier{}'.format(i), Classifier(dim_in=512 * getattr(resnet, BLOCK[tag]).expansion,
@@ -49,7 +55,10 @@ class ArtCV(nn.Module):
 
     def inference(self, x):
         x_features = self.cnn(x)
-        return x_features
+        if self.freeze_cnn:
+            return x_features.detach()
+        else:
+            return x_features
 
     def get_probs(self, x):
         x_features = self.inference(x)
