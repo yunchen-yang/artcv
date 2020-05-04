@@ -145,14 +145,18 @@ class Trainer:
         return loss_mean
 
     @torch.no_grad()
-    def loss_history_plot(self):
+    def loss_history_plot(self, epochs_override=None):
         len_ticks = len(self.loss_history_train)
-        x_axis = np.linspace(0, self.epochs, len_ticks)
+        if epochs_override is None:
+            x_axis = np.linspace(0, self.epochs, len_ticks)
+        else:
+            x_axis = np.linspace(0, epochs_override, len_ticks)
         plt.figure()
         if self.train_val:
             assert(len(self.loss_history_train) == len(self.loss_history_val))
-            plt.plot(x_axis, self.loss_history_train)
-            plt.plot(x_axis, self.loss_history_val)
+            plt.plot(x_axis, self.loss_history_train, label='Training set')
+            plt.plot(x_axis, self.loss_history_val, label='Validation set')
+            plt.legend()
         else:
             plt.plot(x_axis, self.loss_history_train)
 
@@ -210,14 +214,18 @@ class Trainer:
         return sum(f_beta)/len(f_beta)
 
     @torch.no_grad()
-    def accuracy_history_plot(self):
+    def accuracy_history_plot(self, epochs_override=None):
         len_ticks = len(self.accuracy_history_train)
-        x_axis = np.linspace(0, self.epochs, len_ticks)
+        if epochs_override is None:
+            x_axis = np.linspace(0, self.epochs, len_ticks)
+        else:
+            x_axis = np.linspace(0, epochs_override, len_ticks)
         plt.figure()
         if self.train_val:
             assert (len(self.accuracy_history_train) == len(self.accuracy_history_val))
-            plt.plot(x_axis, self.accuracy_history_train)
-            plt.plot(x_axis, self.accuracy_history_val)
+            plt.plot(x_axis, self.accuracy_history_train, label='Training set')
+            plt.plot(x_axis, self.accuracy_history_val, label='Validation set')
+            plt.legend()
         else:
             plt.plot(x_axis, self.accuracy_history_train)
 
