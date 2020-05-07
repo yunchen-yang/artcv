@@ -15,7 +15,7 @@ class Trainer:
     def __init__(self, model, dataset, use_cuda=True,
                  shuffle=True, epochs=100, batch_size_train=64,
                  monitor_frequency=5, compute_acc=True, printout=False,
-                 thre=(0.1, 0.1, 0.1, 0.1), batch_size_val=64,
+                 thre=(0.04, 0.06, 0.08, 0.06), batch_size_val=64,
                  dataloader_train_kwargs=dict(), dataloader_val_kwargs=dict(),
                  batch_size_all=64, dataloader_all_kwargs=dict()):
         self.model = model
@@ -23,6 +23,7 @@ class Trainer:
         self.train_val = bool(self.dataset.train_val_split)
         self.use_cuda = use_cuda
         self.epochs = epochs
+        self.running_loss = []
 
         if self.train_val:
             if shuffle:
@@ -59,7 +60,7 @@ class Trainer:
         if self.use_cuda:
             self.model.cuda()
         self.monitor_frequency = monitor_frequency
-        self.compute_acc=compute_acc
+        self.compute_acc = compute_acc
         self.printout = printout
         self.thre = thre
 
@@ -69,26 +70,35 @@ class Trainer:
     def after_iter(self):
         pass
 
-    def train(self, parameters=None, lr=1e-2, betas=(0.9, 0.999), eps=1e-8, weight_decay=0,
+    def train(self, parameters=None, lr=1e-1, betas=(0.9, 0.999), eps=1e-8, weight_decay=0,
+              reduce_lr=False, step=5, gamma=0.8,
               grad_clip=False, max_norm=1e-5):
         epochs = self.epochs
         self.model.train()
-        params = filter(lambda x: x.requires_grad, self.model.parameters())\
+        params = filter(lambda x: x.requires_grad, self.model.parameters()) \
             if parameters is None else parameters
         optim = torch.optim.Adam(params, lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
 
-        with trange(epochs, desc='Training progress: ', file = sys.stdout) as progbar:
+        with trange(epochs, desc='Training progress: ', file=sys.stdout) as progbar:
             for epoch_idx in progbar:
                 self.before_iter()
                 progbar.update(1)
+                running_loss = 0
                 for data_tensors in self.dataloader_train:
                     data_tensor_tuples = [data_tensors]
                     loss = self.loss(*data_tensor_tuples)
+                    running_loss += loss.item()
                     optim.zero_grad()
                     loss.backward()
                     if grad_clip:
                         torch.nn.utils.clip_grad_norm_(params, max_norm=max_norm)
                     optim.step()
+                self.running_loss.append(running_loss/len(self.dataloader_train))
+
+                if (epoch_idx+1) % step == 0 & reduce_lr:
+                    for p in optim.param_groups:
+                        p['lr'] *= gamma
+
                 if (epoch_idx + 1) % self.monitor_frequency == 0:
                     current_loss_train = self.compute_loss(tag='train')
                     self.loss_history_train.append(current_loss_train)
@@ -119,7 +129,21 @@ class Trainer:
         return loss
 
     @torch.no_grad()
+    def plot_running_loss(self, epochs_override=None):
+        len_ticks = len(self.running_loss)
+        if epochs_override is None:
+            x_axis = np.linspace(0, self.epochs, len_ticks)
+        else:
+            x_axis = np.linspace(0, epochs_override, len_ticks)
+        plt.figure()
+        plt.plot(x_axis, self.running_loss)
+        plt.xlabel('Number of epochs')
+        plt.ylabel('Estimated loss')
+        plt.show()
+
+    @torch.no_grad()
     def compute_loss(self, tag):
+        self.model.eval()
         loss_sum = 0
         if tag == 'train':
             _dataloader = self.dataloader_train
@@ -142,6 +166,7 @@ class Trainer:
             loss = self.model(x, y0, y1, y2, y3, y4)
             loss_sum += torch.sum(loss).item()
         loss_mean = loss_sum / len(_dataset)
+        self.model.train()
         return loss_mean
 
     @torch.no_grad()
@@ -153,7 +178,7 @@ class Trainer:
             x_axis = np.linspace(0, epochs_override, len_ticks)
         plt.figure()
         if self.train_val:
-            assert(len(self.loss_history_train) == len(self.loss_history_val))
+            assert (len(self.loss_history_train) == len(self.loss_history_val))
             plt.plot(x_axis, self.loss_history_train, label='Training set')
             plt.plot(x_axis, self.loss_history_val, label='Validation set')
             plt.legend()
@@ -166,6 +191,7 @@ class Trainer:
 
     @torch.no_grad()
     def get_probs(self, tag, test=False):
+        self.model.eval()
         predictions_tem = []
         ground_truth = []
         if tag == 'train':
@@ -179,23 +205,31 @@ class Trainer:
         for data_tensors in _dataloader:
             if not test:
                 x, y0, y1, y2, y3, y4 = data_tensors
-                ground_truth += [torch.cat((y0.long().cpu(),
-                                            y1.long().cpu(),
-                                            F.one_hot(y2, num_classes=6).squeeze()[:, 1:].long().cpu(),
-                                            y3.long().cpu(),
-                                            y4.long().cpu()), dim=1)]
+                if self.use_cuda and torch.cuda.is_available():
+                    x = x.cuda()
+                    y0 = y0.cuda()
+                    y1 = y1.cuda()
+                    y2 = y2.cuda()
+                    y3 = y3.cuda()
+                    y4 = y4.cuda()
+                ground_truth += [torch.cat((y0.long(),
+                                            y1.long(),
+                                            F.one_hot(y2, num_classes=6).squeeze()[:, 1:].long(),
+                                            y3.long(),
+                                            y4.long()), dim=1)]
             else:
                 x = data_tensors
-            if self.use_cuda and torch.cuda.is_available():
-                x = x.cuda()
+                if self.use_cuda and torch.cuda.is_available():
+                    x = x.cuda()
             y_concat_prob = self.model.get_concat_probs(x)
-            predictions_tem += [y_concat_prob.cpu()]
-        predictions_array = torch.cat(predictions_tem).detach().numpy()
+            predictions_tem += [y_concat_prob]
+        predictions_array = torch.cat(predictions_tem).detach().cpu().numpy()
+        self.model.train()
         if not test:
-            return torch.cat(ground_truth).detach().numpy(), predictions_array
+            return torch.cat(ground_truth).detach().cpu().numpy(), predictions_array
         else:
             return predictions_array
-    
+
     @torch.no_grad()
     def make_predictions(self, tag, thre,
                          boundary=([0, 100], [100, 781], [786, 2706], [2706, 3474])):
@@ -204,14 +238,15 @@ class Trainer:
         predictions = np.zeros(predictions_array.shape, dtype='int')
 
         for i in range(len(boundary)):
-            predictions[:, boundary[i][0]: boundary[i][1]][predictions_array[:, boundary[i][0]: boundary[i][1]] > thre[i]] = 1
+            predictions[:, boundary[i][0]: boundary[i][1]][
+                predictions_array[:, boundary[i][0]: boundary[i][1]] > thre[i]] = 1
         return ground_truth, predictions
 
     @torch.no_grad()
     def compute_accuracy(self, tag):
         y_true, y_pred = self.make_predictions(tag=tag, thre=self.thre)
-        f_beta = [fbeta_score(y_true[i,:], y_pred[i,:], beta=2) for i in range(y_true.shape[0])]
-        return sum(f_beta)/len(f_beta)
+        f_beta = [fbeta_score(y_true[i, :], y_pred[i, :], beta=2) for i in range(y_true.shape[0])]
+        return sum(f_beta) / len(f_beta)
 
     @torch.no_grad()
     def accuracy_history_plot(self, epochs_override=None):
