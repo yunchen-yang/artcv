@@ -143,6 +143,7 @@ train/
 weights/
 *.ipynb
 pretrained/
+!Multi-head_ResNet_for_multi-label_classification.ipynb
 
 # PyCharm IDE files
 .idea/
