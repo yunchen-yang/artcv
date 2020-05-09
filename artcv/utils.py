@@ -3,6 +3,7 @@ import numpy as np
 from torchvision.transforms import Compose, Resize, RandomResizedCrop, Normalize, ToTensor
 import pandas as pd
 import torch
+from sklearn.metrics import fbeta_score
 
 
 def label_indexer_fine(labels_dataframe):
@@ -136,4 +137,35 @@ def image_list_scan(data_info, indices):
         return list(data_info['id'][indices]), list(data_info['attribute_ids'][indices])
 
 
+def f2score(ground_truth, pred, return_mean=True):
+    f_beta = [fbeta_score(ground_truth[i,:], pred[i,:], beta=2) for i in range(ground_truth.shape[0])]
+    if return_mean:
+        return sum(f_beta)/len(f_beta)
+    else:
+        return f_beta
+
+    
+def regularized_pred(probs, thre, upper_bound=(3, 4, 17, 18), lower_bound=3,
+                     boundary=([0, 100], [100, 781], [786, 2706], [2706, 3474])):
+    thres_array = np.ones((probs.shape[1]), dtype='float')
+    pred = dict()
+    for i in range(len(boundary)):
+        thres_array[boundary[i][0]: boundary[i][1]] = thre[i]
+        probs_tem = probs[:, boundary[i][0]: boundary[i][1]]/thre[i]
+        mask_tem = np.zeros(probs_tem.shape, dtype='float')
+        max_args = probs_tem.argsort(axis=-1)[:,::-1][:, :upper_bound[i]]
+        for i_ in range(mask_tem.shape[0]):
+            mask_tem[i_, :][max_args[i_, :]] = 1
+        probs_tem *= mask_tem
+        probs_tem[probs_tem>=1] = 1
+        probs_tem[probs_tem<1] = 0
+        pred[i] = probs_tem  
+    pred_array = np.concatenate((pred[0], pred[1], 
+                                 probs[:, boundary[1][1]: boundary[2][0]], pred[2], pred[3]), axis=-1)
+    no_label = np.where(pred_array.max(axis=-1)==0)[0]
+    if no_label.shape[0] != 0:
+        for idx in no_label:
+            _max_args = (probs[idx, :]/thres_array).argsort(axis=-1)[::-1][:lower_bound]
+            pred_array[idx, :][_max_args] = 1
+    return pred_array
 
