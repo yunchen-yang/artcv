@@ -108,6 +108,28 @@ def imgreader(img_id, ext, path, attr_ids, attr2indexing, length_list, dimension
     return x, tuple(y_dict.values())
 
 
+def imgreader_test(file_path, dimension=256, transform='val', grey_scale=False):
+    with open(file_path, 'rb') as f:
+        img_ = Image.open(f)
+        if grey_scale:
+            img = img_.convert('L')
+        else:
+            img = img_.convert('RGB')
+
+    transformer = {
+        'train': Compose([RandomResizedCrop(size=(dimension, dimension)),
+                          ToTensor(),
+                          Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]
+                         ),
+        'val': Compose([Resize(size=(dimension, dimension)),
+                        ToTensor(),
+                        Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    }
+    x = transformer[transform](img)
+
+    return x
+
+
 def counting_elements(labels_indexing_df):
     return [len(labels_indexing_df['indexing'][labels_indexing_df['attr_tier1']==catagory])
             for catagory in sorted(list(set(list(labels_indexing_df['attr_tier1']))))]
