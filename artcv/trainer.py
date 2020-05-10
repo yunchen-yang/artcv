@@ -17,7 +17,8 @@ class Trainer:
                  monitor_frequency=5, compute_acc=True, printout=False,
                  thre=(0.04, 0.06, 0.08, 0.06), batch_size_val=64,
                  dataloader_train_kwargs=dict(), dataloader_val_kwargs=dict(),
-                 batch_size_all=64, dataloader_all_kwargs=dict()):
+                 batch_size_all=64, dataloader_all_kwargs=dict(),
+                 batch_size_test=64, dataloader_test_kwargs=dict()):
         self.model = model
         self.dataset = dataset
         self.train_val = bool(self.dataset.train_val_split)
@@ -55,6 +56,12 @@ class Trainer:
         self.dataloader_all_kwargs = copy.deepcopy(dataloader_all_kwargs)
         self.dataloader_all_kwargs.update({'batch_size': batch_size_all, 'sampler': all_sampler})
         self.dataloader_all = DataLoader(self.dataset.all, **self.dataloader_all_kwargs)
+
+        test_sampler = SequentialSampler(dataset.test)
+        if self.dataset.test_path is not None:
+            self.dataloader_test_kwargs = copy.deepcopy(dataloader_test_kwargs)
+            self.dataloader_test_kwargs.update({'batch_size': batch_size_test, 'sampler': test_sampler})
+            self.dataloader_test = DataLoader(self.dataset.test, **self.dataloader_test_kwargs)
 
         self.use_cuda = use_cuda and torch.cuda.is_available()
         if self.use_cuda:
@@ -193,42 +200,53 @@ class Trainer:
     def get_probs(self, tag, test=False):
         self.model.eval()
         predictions_tem = []
-        ground_truth = []
-        if tag == 'train':
-            _dataloader = self.dataloader_train
-        elif tag == 'val':
-            _dataloader = self.dataloader_val
-        elif tag == 'all':
-            _dataloader = self.dataloader_all
-        else:
-            raise ValueError('Invalid tag!')
-        for data_tensors in _dataloader:
-            if not test:
-                x, y0, y1, y2, y3, y4 = data_tensors
-                if self.use_cuda and torch.cuda.is_available():
-                    x = x.cuda()
-                    y0 = y0.cuda()
-                    y1 = y1.cuda()
-                    y2 = y2.cuda()
-                    y3 = y3.cuda()
-                    y4 = y4.cuda()
-                ground_truth += [torch.cat((y0.long(),
-                                            y1.long(),
-                                            F.one_hot(y2, num_classes=6).squeeze()[:, 1:].long(),
-                                            y3.long(),
-                                            y4.long()), dim=1)]
-            else:
+        if tag == 'test':
+            _dataloader = self.dataloader_test
+            for data_tensors in _dataloader:
                 x = data_tensors
                 if self.use_cuda and torch.cuda.is_available():
                     x = x.cuda()
             y_concat_prob = self.model.get_concat_probs(x)
             predictions_tem += [y_concat_prob]
-        predictions_array = torch.cat(predictions_tem).detach().cpu().numpy()
-        self.model.train()
-        if not test:
-            return torch.cat(ground_truth).detach().cpu().numpy(), predictions_array
-        else:
+            predictions_array = torch.cat(predictions_tem).detach().cpu().numpy()
             return predictions_array
+        else:
+            ground_truth = []
+            if tag == 'train':
+                _dataloader = self.dataloader_train
+            elif tag == 'val':
+                _dataloader = self.dataloader_val
+            elif tag == 'all':
+                _dataloader = self.dataloader_all
+            else:
+                raise ValueError('Invalid tag!')
+            for data_tensors in _dataloader:
+                if not test:
+                    x, y0, y1, y2, y3, y4 = data_tensors
+                    if self.use_cuda and torch.cuda.is_available():
+                        x = x.cuda()
+                        y0 = y0.cuda()
+                        y1 = y1.cuda()
+                        y2 = y2.cuda()
+                        y3 = y3.cuda()
+                        y4 = y4.cuda()
+                    ground_truth += [torch.cat((y0.long(),
+                                                y1.long(),
+                                                F.one_hot(y2, num_classes=6).squeeze()[:, 1:].long(),
+                                                y3.long(),
+                                                y4.long()), dim=1)]
+                else:
+                    x = data_tensors
+                    if self.use_cuda and torch.cuda.is_available():
+                        x = x.cuda()
+                y_concat_prob = self.model.get_concat_probs(x)
+                predictions_tem += [y_concat_prob]
+            predictions_array = torch.cat(predictions_tem).detach().cpu().numpy()
+            self.model.train()
+            if not test:
+                return torch.cat(ground_truth).detach().cpu().numpy(), predictions_array
+            else:
+                return predictions_array
 
     @torch.no_grad()
     def make_predictions(self, tag, thre,
