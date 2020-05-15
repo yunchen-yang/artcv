@@ -6,12 +6,18 @@ import torch.nn.functional as F
 
 
 class ResNet_CNN(ResNet):
-    def __init__(self, block, layers, weight_path, **kwargs):
+    def __init__(self, block, layers, weight_path, freeze_layers, **kwargs):
         super().__init__(block, layers, **kwargs)
         self.weight_path = weight_path
+        if type(freeze_layers) == bool and freeze_layers:
+            self.freeze_layers = 4
+        else:
+            self.freeze_layers = freeze_layers
         if self.weight_path is not None:
             self.load_state_dict(torch.load(self.weight_path))
         del self.fc
+        if bool(self.freeze_layers):
+            self._freeze_layers()
 
     def forward(self, x):
         x = self.conv1(x)
@@ -19,15 +25,26 @@ class ResNet_CNN(ResNet):
         x = self.relu(x)
         x = self.maxpool(x)
 
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
+        x = self.layer1(x) if self.freeze_layers != 1 else self.layer1(x).detach()
+        x = self.layer2(x) if self.freeze_layers != 2 else self.layer2(x).detach()
+        x = self.layer3(x) if self.freeze_layers != 3 else self.layer3(x).detach()
         x = self.layer4(x)
 
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
 
-        return x
+        if self.freeze_layers != 4:
+            return x
+        else:
+            return x.detach()
+
+    def _freeze_layers(self):
+        _bool = False
+        for name, module in self.named_children():
+            if name == f'layer{self.freeze_layers+1}' or _bool:
+                _bool = True
+            for p in module.parameters():
+                p.requires_grad = _bool
 
 
 class Classifier(nn.Module):

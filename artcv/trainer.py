@@ -197,7 +197,7 @@ class Trainer:
         plt.show()
 
     @torch.no_grad()
-    def get_probs(self, tag, test=False):
+    def get_probs(self, tag, return_probs_only=False):
         self.model.eval()
         predictions_tem = []
         if tag == 'test':
@@ -221,7 +221,7 @@ class Trainer:
             else:
                 raise ValueError('Invalid tag!')
             for data_tensors in _dataloader:
-                if not test:
+                if not return_probs_only:
                     x, y0, y1, y2, y3, y4 = data_tensors
                     if self.use_cuda and torch.cuda.is_available():
                         x = x.cuda()
@@ -243,7 +243,7 @@ class Trainer:
                 predictions_tem += [y_concat_prob]
             predictions_array = torch.cat(predictions_tem).detach().cpu().numpy()
             self.model.train()
-            if not test:
+            if not return_probs_only:
                 return torch.cat(ground_truth).detach().cpu().numpy(), predictions_array
             else:
                 return predictions_array

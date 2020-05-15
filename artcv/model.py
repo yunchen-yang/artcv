@@ -38,10 +38,9 @@ class ArtCV(nn.Module):
         self.weight_path = weight_path
         self.freeze_cnn = freeze_cnn
 
-        self.cnn = ResNet_CNN(getattr(resnet, BLOCK[tag]), LAYERS[tag], self.weight_path)
-        if self.freeze_cnn:
-            for p in self.cnn.parameters():
-                p.requires_grad = False
+        self.cnn = ResNet_CNN(getattr(resnet, BLOCK[tag]), LAYERS[tag],
+                              weight_path=self.weight_path, freeze_layers=freeze_cnn)
+
         self.classifiers = nn.ModuleDict(
             collections.OrderedDict(
                 [('classifier{}'.format(i), Classifier(dim_in=512 * getattr(resnet, BLOCK[tag]).expansion,
@@ -54,11 +53,7 @@ class ArtCV(nn.Module):
                  for i in range(len(self.num_labels))]))
 
     def inference(self, x):
-        x_features = self.cnn(x)
-        if self.freeze_cnn:
-            return x_features.detach()
-        else:
-            return x_features
+        return self.cnn(x)
 
     def get_probs(self, x):
         x_features = self.inference(x)
