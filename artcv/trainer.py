@@ -57,8 +57,8 @@ class Trainer:
         self.dataloader_all_kwargs.update({'batch_size': batch_size_all, 'sampler': all_sampler})
         self.dataloader_all = DataLoader(self.dataset.all, **self.dataloader_all_kwargs)
 
-        test_sampler = SequentialSampler(dataset.test)
         if self.dataset.test_path is not None:
+            test_sampler = SequentialSampler(dataset.test)
             self.dataloader_test_kwargs = copy.deepcopy(dataloader_test_kwargs)
             self.dataloader_test_kwargs.update({'batch_size': batch_size_test, 'sampler': test_sampler})
             self.dataloader_test = DataLoader(self.dataset.test, **self.dataloader_test_kwargs)
