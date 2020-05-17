@@ -25,7 +25,8 @@ class ArtCV(nn.Module):
                  classifier_layers=(1, 1, 1, 1, 1), classifier_hidden=(2048, 2048, 2048, 2048, 2048),
                  task=('ml', 'ml', 'mc', 'ml', 'ml'), weights=(1, 1, 1, 1, 1),
                  use_batch_norm=True, dropout_rate=0.01,
-                 weight_path=None, freeze_cnn=False):
+                 weight_path=None, freeze_cnn=False,
+                 weighted_loss=True, weighted_loss_ratio=10, weighted_loss_base=10):
         super().__init__()
         self.tag = tag
         self.num_labels = num_labels
@@ -37,6 +38,9 @@ class ArtCV(nn.Module):
         self.dropout_rate = dropout_rate
         self.weight_path = weight_path
         self.freeze_cnn = freeze_cnn
+        self.weighted_loss = weighted_loss
+        self.weighted_loss_ratio = weighted_loss_ratio
+        self.weighted_loss_base = weighted_loss_base
 
         self.cnn = ResNet_CNN(getattr(resnet, BLOCK[tag]), LAYERS[tag],
                               weight_path=self.weight_path, freeze_layers=freeze_cnn)
@@ -68,10 +72,28 @@ class ArtCV(nn.Module):
 
     def get_loss(self, x, y0, y1, y2, y3, y4):
         y_pred0, y_pred1, y_pred2, y_pred3, y_pred4 = self.get_probs(x)
-        loss0 = torch.mean(F.binary_cross_entropy(y_pred0, y0, reduction='none'), dim=1)
-        loss1 = torch.mean(F.binary_cross_entropy(y_pred1, y1, reduction='none'), dim=1)
-        loss3 = torch.mean(F.binary_cross_entropy(y_pred3, y3, reduction='none'), dim=1)
-        loss4 = torch.mean(F.binary_cross_entropy(y_pred4, y4, reduction='none'), dim=1)
+        if self.weighted_loss:
+            loss0 = torch.mean(F.binary_cross_entropy(y_pred0, y0, reduction='none')
+                               * self.get_weight_mat(y0, ratio=self.weighted_loss_ratio,
+                                                     base=self.weighted_loss_base),
+                               dim=1)
+            loss1 = torch.mean(F.binary_cross_entropy(y_pred1, y1, reduction='none')
+                               * self.get_weight_mat(y1, ratio=self.weighted_loss_ratio,
+                                                     base=self.weighted_loss_base),
+                               dim=1)
+            loss3 = torch.mean(F.binary_cross_entropy(y_pred3, y3, reduction='none')
+                               * self.get_weight_mat(y3, ratio=self.weighted_loss_ratio,
+                                                     base=self.weighted_loss_base),
+                               dim=1)
+            loss4 = torch.mean(F.binary_cross_entropy(y_pred4, y4, reduction='none')
+                               * self.get_weight_mat(y4, ratio=self.weighted_loss_ratio,
+                                                     base=self.weighted_loss_base),
+                               dim=1)
+        else:
+            loss0 = torch.mean(F.binary_cross_entropy(y_pred0, y0, reduction='none'), dim=1)
+            loss1 = torch.mean(F.binary_cross_entropy(y_pred1, y1, reduction='none'), dim=1)
+            loss3 = torch.mean(F.binary_cross_entropy(y_pred3, y3, reduction='none'), dim=1)
+            loss4 = torch.mean(F.binary_cross_entropy(y_pred4, y4, reduction='none'), dim=1)
         loss2 = F.cross_entropy(y_pred2, y2.view(-1), reduction='none')
         return loss0, loss1, loss2, loss3, loss4
 
@@ -87,3 +109,7 @@ class ArtCV(nn.Module):
         return torch.cat((y_pred0, y_pred1,
                           F.one_hot(y_pred2.argmax(axis=-1), num_classes=self.num_labels[2]).float()[:, 1:],
                           y_pred3, y_pred4), dim=1)
+
+    def get_weight_mat(self, y, ratio=10, base=10):
+        return (torch.ones(y.shape) - y) * (torch.sum(y, dim=-1).view(-1, 1) + base) \
+               * ratio / (y.shape[1] - torch.sum(y, dim=-1).view(-1, 1)).detach()

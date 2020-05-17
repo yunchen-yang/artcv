@@ -23,6 +23,8 @@ class Trainer:
         self.dataset = dataset
         self.train_val = bool(self.dataset.train_val_split)
         self.use_cuda = use_cuda
+        if self.use_cuda and torch.cuda.is_available():
+            torch.set_default_tensor_type(torch.cuda.FloatTensor)
         self.epochs = epochs
         self.running_loss = []
 
