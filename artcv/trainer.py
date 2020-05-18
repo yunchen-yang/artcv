@@ -9,16 +9,17 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import RandomSampler, SequentialSampler
 from tqdm import trange
+from artcv.utils import regularized_pred
 
 
 class Trainer:
     def __init__(self, model, dataset, use_cuda=True,
-                 shuffle=True, epochs=100, batch_size_train=64,
+                 shuffle=True, epochs=100,
+                 batch_size_train=64, batch_size_val=64, batch_size_all=64, batch_size_test=64,
                  monitor_frequency=5, compute_acc=True, printout=False,
-                 thre=(0.04, 0.06, 0.08, 0.06), batch_size_val=64,
                  dataloader_train_kwargs=dict(), dataloader_val_kwargs=dict(),
-                 batch_size_all=64, dataloader_all_kwargs=dict(),
-                 batch_size_test=64, dataloader_test_kwargs=dict()):
+                 dataloader_all_kwargs=dict(),
+                 dataloader_test_kwargs=dict()):
         self.model = model
         self.dataset = dataset
         self.train_val = bool(self.dataset.train_val_split)
@@ -71,7 +72,6 @@ class Trainer:
         self.monitor_frequency = monitor_frequency
         self.compute_acc = compute_acc
         self.printout = printout
-        self.thre = thre
 
     def before_iter(self):
         pass
@@ -208,8 +208,8 @@ class Trainer:
                 x = data_tensors
                 if self.use_cuda and torch.cuda.is_available():
                     x = x.cuda()
-            y_concat_prob = self.model.get_concat_probs(x)
-            predictions_tem += [y_concat_prob]
+                y_concat_prob = self.model.get_concat_probs(x)
+                predictions_tem += [y_concat_prob]
             predictions_array = torch.cat(predictions_tem).detach().cpu().numpy()
             return predictions_array
         else:
@@ -251,20 +251,69 @@ class Trainer:
                 return predictions_array
 
     @torch.no_grad()
-    def make_predictions(self, tag, thre,
+    def make_predictions(self, tag, return_pred_only=False,
+                         thre=(0.08, 0.08, 0.08, 0.08), upper_bound=(3, 4, 17, 18), lower_bound=3,
                          boundary=([0, 100], [100, 781], [786, 2706], [2706, 3474])):
-        assert len(thre) == len(boundary)
-        ground_truth, predictions_array = self.get_probs(tag=tag)
-        predictions = np.zeros(predictions_array.shape, dtype='int')
-
-        for i in range(len(boundary)):
-            predictions[:, boundary[i][0]: boundary[i][1]][
-                predictions_array[:, boundary[i][0]: boundary[i][1]] > thre[i]] = 1
-        return ground_truth, predictions
+        self.model.eval()
+        predictions_tem = []
+        if tag == 'test':
+            _dataloader = self.dataloader_test
+            for data_tensors in _dataloader:
+                x = data_tensors
+                if self.use_cuda and torch.cuda.is_available():
+                    x = x.cuda()
+                y_concat_pred = regularized_pred(self.model.get_concat_probs(x).detach().cpu().numpy(),
+                                                 thre=thre,
+                                                 upper_bound=upper_bound, lower_bound=lower_bound, boundary=boundary)
+                predictions_tem += [y_concat_pred]
+            predictions_array = np.concatenate(predictions_tem)
+            return predictions_array
+        else:
+            ground_truth = []
+            if tag == 'train':
+                _dataloader = self.dataloader_train
+            elif tag == 'val':
+                _dataloader = self.dataloader_val
+            elif tag == 'all':
+                _dataloader = self.dataloader_all
+            else:
+                raise ValueError('Invalid tag!')
+            for data_tensors in _dataloader:
+                if not return_pred_only:
+                    x, y0, y1, y2, y3, y4 = data_tensors
+                    if self.use_cuda and torch.cuda.is_available():
+                        x = x.cuda()
+                        y0 = y0.cuda()
+                        y1 = y1.cuda()
+                        y2 = y2.cuda()
+                        y3 = y3.cuda()
+                        y4 = y4.cuda()
+                    ground_truth += [torch.cat((y0.long(),
+                                                y1.long(),
+                                                F.one_hot(y2, num_classes=6).squeeze()[:, 1:].long(),
+                                                y3.long(),
+                                                y4.long()), dim=1)]
+                else:
+                    x = data_tensors
+                    if self.use_cuda and torch.cuda.is_available():
+                        x = x.cuda()
+                y_concat_pred = regularized_pred(self.model.get_concat_probs(x).detach().cpu().numpy(),
+                                                 thre=thre,
+                                                 upper_bound=upper_bound, lower_bound=lower_bound, boundary=boundary)
+                predictions_tem += [y_concat_pred]
+            predictions_array = np.concatenate(predictions_tem)
+            self.model.train()
+            if not return_pred_only:
+                return torch.cat(ground_truth).detach().cpu().numpy(), predictions_array
+            else:
+                return predictions_array
 
     @torch.no_grad()
-    def compute_accuracy(self, tag):
-        y_true, y_pred = self.make_predictions(tag=tag, thre=self.thre)
+    def compute_accuracy(self, tag,
+                         thre=(0.08, 0.08, 0.08, 0.08), upper_bound=(3, 4, 17, 18), lower_bound=3,
+                         boundary=([0, 100], [100, 781], [786, 2706], [2706, 3474])):
+        y_true, y_pred = self.make_predictions(tag=tag, thre=thre,
+                                               upper_bound=upper_bound, lower_bound=lower_bound, boundary=boundary)
         f_beta = [fbeta_score(y_true[i, :], y_pred[i, :], beta=2) for i in range(y_true.shape[0])]
         return sum(f_beta) / len(f_beta)
 

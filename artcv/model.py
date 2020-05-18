@@ -26,7 +26,7 @@ class ArtCV(nn.Module):
                  task=('ml', 'ml', 'mc', 'ml', 'ml'), weights=(1, 1, 1, 1, 1),
                  use_batch_norm=True, dropout_rate=0.01,
                  weight_path=None, freeze_cnn=False,
-                 weighted_loss=True, weighted_loss_ratio=10, weighted_loss_base=10):
+                 weighted_loss=False, weighted_loss_ratio=10, weighted_loss_base=10):
         super().__init__()
         self.tag = tag
         self.num_labels = num_labels
@@ -43,7 +43,7 @@ class ArtCV(nn.Module):
         self.weighted_loss_base = weighted_loss_base
 
         self.cnn = ResNet_CNN(getattr(resnet, BLOCK[tag]), LAYERS[tag],
-                              weight_path=self.weight_path, freeze_layers=freeze_cnn)
+                              weight_path=self.weight_path, freeze_layers=self.freeze_cnn)
 
         self.classifiers = nn.ModuleDict(
             collections.OrderedDict(

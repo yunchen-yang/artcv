@@ -58,7 +58,7 @@ class Classifier(nn.Module):
             [('Layer {}'.format(i), nn.Sequential(
                 nn.Linear(n_in, n_out),
                 nn.BatchNorm1d(n_out, momentum=.01, eps=0.001) if self.use_batch_norm else None,
-                nn.ReLU() if i != len(dims)-2 else None,
+                nn.ReLU() if i < len(dims)-2 else None,
                 nn.Dropout(p=self.dropout_rate) if self.dropout_rate > 0 else None))
              for i, (n_in, n_out) in enumerate(zip(dims[:-1], dims[1:]))]))
 
