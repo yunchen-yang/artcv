@@ -78,10 +78,10 @@ class ArtCV(nn.Module):
     def get_loss(self, x, y0, y1, y2, y3, y4):
         y_pred0, y_pred1, y_pred2, y_pred3, y_pred4 = self.get_probs(x)
         if self.focal_loss:
-            loss0 = torch.mean(focal_loss(y_pred0, y0, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
-            loss1 = torch.mean(focal_loss(y_pred1, y1, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
-            loss3 = torch.mean(focal_loss(y_pred3, y3, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
-            loss4 = torch.mean(focal_loss(y_pred4, y4, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
+            loss0 = torch.mean(focal_loss_ml(y_pred0, y0, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
+            loss1 = torch.mean(focal_loss_ml(y_pred1, y1, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
+            loss3 = torch.mean(focal_loss_ml(y_pred3, y3, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
+            loss4 = torch.mean(focal_loss_ml(y_pred4, y4, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
             loss2 = focal_loss_mc(y_pred2, y2.view(-1), num_classes=self.num_labels[2],
                                   alpha=self.alpha_mc, gamma=self.gamma_mc, alpha_t=self.alpha_t)
         else:
@@ -109,7 +109,7 @@ class ArtCV(nn.Module):
                           y_pred3, y_pred4), dim=1)
 
 
-def focal_loss(inputs, targets, alpha=0.25, gamma=2, alpha_t=False):
+def focal_loss_ml(inputs, targets, alpha=0.25, gamma=2, alpha_t=False):
     BCE_loss = F.binary_cross_entropy(inputs, targets, reduction='none')
     pt = torch.exp(-BCE_loss)
     if alpha_t:
