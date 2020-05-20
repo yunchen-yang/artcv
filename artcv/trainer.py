@@ -14,9 +14,10 @@ from artcv.utils import regularized_pred
 
 class Trainer:
     def __init__(self, model, dataset, use_cuda=True,
-                 shuffle=True, epochs=100,
+                 shuffle=True, epochs=100, extra_epochs_mc=1,
                  batch_size_train=64, batch_size_val=64, batch_size_all=64, batch_size_test=64,
-                 monitor_frequency=5, compute_acc=True, printout=False,
+                 head_log=True,
+                 monitor_frequency=False, compute_acc=True, printout=False,
                  dataloader_train_kwargs=dict(), dataloader_val_kwargs=dict(),
                  dataloader_all_kwargs=dict(),
                  dataloader_test_kwargs=dict()):
@@ -27,7 +28,16 @@ class Trainer:
         if self.use_cuda and torch.cuda.is_available():
             torch.set_default_tensor_type(torch.cuda.FloatTensor)
         self.epochs = epochs
+        self.extra_epochs_mc = extra_epochs_mc
+        self.head_log = head_log
         self.running_loss = []
+        if self.head_log:
+            self.loss_log = dict()
+            self.loss_log['Head 0'] = []
+            self.loss_log['Head 1'] = []
+            self.loss_log['Head 2'] = []
+            self.loss_log['Head 3'] = []
+            self.loss_log['Head 4'] = []
 
         if self.train_val:
             if shuffle:
@@ -79,9 +89,32 @@ class Trainer:
     def after_iter(self):
         pass
 
-    def train(self, parameters=None, lr=1e-1, betas=(0.9, 0.999), eps=1e-8, weight_decay=0,
-              reduce_lr=False, step=5, gamma=0.8,
+    def train_mc(self, lr, parameters=None, betas=(0.9, 0.999), eps=1e-8, weight_decay=0,
               grad_clip=False, max_norm=1e-5):
+        epochs = self.extra_epochs_mc
+        self.model.classifiers['classifier2'].train()
+        params = filter(lambda x: x.requires_grad, self.model.classifiers['classifier2'].parameters()) \
+            if parameters is None else parameters
+        optim = torch.optim.Adam(params, lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
+        for epoch in range(epochs):
+            for x, _, _, y2, _, _ in self.dataloader_train:
+                if self.use_cuda and torch.cuda.is_available():
+                    x = x.cuda()
+                    y2 = y2.cuda()
+                loss = torch.mean(F.cross_entropy(self.model.classifiers['classifier2'](self.model.inference(x)).view(-1,
+                                                                                                self.model.num_labels[2]),
+                                                  y2.view(-1), reduction='none'))
+                optim.zero_grad()
+                loss.backward()
+                if grad_clip:
+                    torch.nn.utils.clip_grad_norm_(params, max_norm=max_norm)
+                optim.step()
+
+    def train(self, parameters=None, lr=1e-1, mc_lr=1e-1, betas=(0.9, 0.999), eps=1e-8, weight_decay=0,
+              reduce_lr=False, step=5, gamma=0.8,
+              reduce_lr_mc=False, step_mc=5, gamma_mc=0.8,
+              grad_clip=False, max_norm=1e-5,
+              train_mc_kwargs=dict()):
         epochs = self.epochs
         self.model.train()
         params = filter(lambda x: x.requires_grad, self.model.parameters()) \
@@ -93,9 +126,24 @@ class Trainer:
                 self.before_iter()
                 progbar.update(1)
                 running_loss = 0
+                if self.head_log:
+                    head_loss0 = 0
+                    head_loss1 = 0
+                    head_loss2 = 0
+                    head_loss3 = 0
+                    head_loss4 = 0
                 for data_tensors in self.dataloader_train:
                     data_tensor_tuples = [data_tensors]
-                    loss = self.loss(*data_tensor_tuples)
+                    if self.head_log:
+                        loss0, loss1, loss2, loss3, loss4 = self.loss(*data_tensor_tuples, head_log=self.head_log)
+                        loss = torch.mean(loss0 + loss1 + loss2 + loss3 + loss4)
+                        head_loss0 += torch.mean(loss0).item()
+                        head_loss1 += torch.mean(loss1).item()
+                        head_loss2 += torch.mean(loss2).item()
+                        head_loss3 += torch.mean(loss3).item()
+                        head_loss4 += torch.mean(loss4).item()
+                    else:
+                        loss = self.loss(*data_tensor_tuples)
                     running_loss += loss.item()
                     optim.zero_grad()
                     loss.backward()
@@ -103,29 +151,42 @@ class Trainer:
                         torch.nn.utils.clip_grad_norm_(params, max_norm=max_norm)
                     optim.step()
                 self.running_loss.append(running_loss/len(self.dataloader_train))
+                if self.head_log:
+                    self.loss_log['Head 0'].append(head_loss0/len(self.dataloader_train))
+                    self.loss_log['Head 1'].append(head_loss1/len(self.dataloader_train))
+                    self.loss_log['Head 2'].append(head_loss2/len(self.dataloader_train))
+                    self.loss_log['Head 3'].append(head_loss3/len(self.dataloader_train))
+                    self.loss_log['Head 4'].append(head_loss4/len(self.dataloader_train))
 
                 if (epoch_idx+1) % step == 0 & reduce_lr:
                     for p in optim.param_groups:
                         p['lr'] *= gamma
 
-                if (epoch_idx + 1) % self.monitor_frequency == 0:
-                    current_loss_train = self.compute_loss(tag='train')
-                    self.loss_history_train.append(current_loss_train)
-                    if self.compute_acc:
-                        current_accuracy_train = self.compute_accuracy(tag='train')
-                        self.accuracy_history_train.append(current_accuracy_train)
-                    if self.train_val:
-                        current_loss_val = self.compute_loss(tag='val')
-                        self.loss_history_val.append(current_loss_val)
+                if bool(self.extra_epochs_mc):
+                    if (epoch_idx + 1) % step_mc == 0 & reduce_lr_mc:
+                        mc_lr *= gamma_mc
+
+                if bool(self.monitor_frequency):
+                    if (epoch_idx + 1) % self.monitor_frequency == 0:
+                        current_loss_train = self.compute_loss(tag='train')
+                        self.loss_history_train.append(current_loss_train)
                         if self.compute_acc:
-                            current_accuracy_val = self.compute_accuracy(tag='val')
-                            self.accuracy_history_val.append(current_accuracy_val)
-                    if self.printout:
-                        print("After %i epochs, loss is %f and prediction accuracy is %f."
-                              % (epoch_idx, current_loss_train, current_accuracy_train))
+                            current_accuracy_train = self.compute_accuracy(tag='train')
+                            self.accuracy_history_train.append(current_accuracy_train)
+                        if self.train_val:
+                            current_loss_val = self.compute_loss(tag='val')
+                            self.loss_history_val.append(current_loss_val)
+                            if self.compute_acc:
+                                current_accuracy_val = self.compute_accuracy(tag='val')
+                                self.accuracy_history_val.append(current_accuracy_val)
+                        if self.printout:
+                            print("After %i epochs, loss is %f and prediction accuracy is %f."
+                                  % (epoch_idx, current_loss_train, current_accuracy_train))
+                if bool(self.extra_epochs_mc):
+                    self.train_mc(lr=mc_lr, **train_mc_kwargs)
                 self.after_iter()
 
-    def loss(self, data_tensors):
+    def loss(self, data_tensors, head_log=False):
         x, y0, y1, y2, y3, y4 = data_tensors
         if self.use_cuda and torch.cuda.is_available():
             x = x.cuda()
@@ -134,8 +195,12 @@ class Trainer:
             y2 = y2.cuda()
             y3 = y3.cuda()
             y4 = y4.cuda()
-        loss = torch.mean(self.model(x, y0, y1, y2, y3, y4))
-        return loss
+        if head_log:
+            loss0, loss1, loss2, loss3, loss4 = self.model(x, y0, y1, y2, y3, y4, reduction='none')
+            return loss0, loss1, loss2, loss3, loss4
+        else:
+            loss = torch.mean(self.model(x, y0, y1, y2, y3, y4, reduction='sum'))
+            return loss
 
     @torch.no_grad()
     def plot_running_loss(self, epochs_override=None):
@@ -149,6 +214,25 @@ class Trainer:
         plt.xlabel('Number of epochs')
         plt.ylabel('Estimated loss')
         plt.show()
+
+    @torch.no_grad()
+    def plot_head_loss(self, epochs_override=None):
+        if not self.head_log:
+            pass
+        else:
+            len_ticks = len(self.running_loss)
+            if epochs_override is None:
+                x_axis = np.linspace(0, self.epochs, len_ticks)
+            else:
+                x_axis = np.linspace(0, epochs_override, len_ticks)
+            plt.figure()
+            for i in range(0, 5):
+                log_array = np.array(self.loss_log[f'Head {i}'])
+                plt.plot(x_axis, log_array/log_array[0], label=f'Head {i}')
+            plt.legend()
+            plt.xlabel('Number of epochs')
+            plt.ylabel('Estimated loss')
+            plt.show()
 
     @torch.no_grad()
     def compute_loss(self, tag):

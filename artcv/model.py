@@ -26,7 +26,8 @@ class ArtCV(nn.Module):
                  task=('ml', 'ml', 'mc', 'ml', 'ml'), weights=(1, 1, 1, 1, 1),
                  use_batch_norm=True, dropout_rate=0.01,
                  weight_path=None, freeze_cnn=False,
-                 focal_loss=False, alpha=0.25, gamma=2):
+                 focal_loss=False, alpha=0.25, alpha_mc=(0.25, 0.75, 0.75, 0.75, 0.75, 0.75),
+                 gamma_mc=2, gamma=2, alpha_t=True):
         super().__init__()
         self.tag = tag
         self.num_labels = num_labels
@@ -41,7 +42,10 @@ class ArtCV(nn.Module):
         self.focal_loss = focal_loss
         if self.focal_loss:
             self.alpha = alpha
+            self.alpha_mc =alpha_mc
             self.gamma = gamma
+            self.gamma_mc = gamma_mc
+            self.alpha_t = alpha_t
 
         self.cnn = ResNet_CNN(getattr(resnet, BLOCK[tag]), LAYERS[tag],
                               weight_path=self.weight_path, freeze_layers=self.freeze_cnn)
@@ -74,23 +78,28 @@ class ArtCV(nn.Module):
     def get_loss(self, x, y0, y1, y2, y3, y4):
         y_pred0, y_pred1, y_pred2, y_pred3, y_pred4 = self.get_probs(x)
         if self.focal_loss:
-            loss0 = torch.mean(focal_loss(y_pred0, y0, alpha=self.alpha, gamma=self.gamma), dim=1)
-            loss1 = torch.mean(focal_loss(y_pred1, y1, alpha=self.alpha, gamma=self.gamma), dim=1)
-            loss3 = torch.mean(focal_loss(y_pred3, y3, alpha=self.alpha, gamma=self.gamma), dim=1)
-            loss4 = torch.mean(focal_loss(y_pred4, y4, alpha=self.alpha, gamma=self.gamma), dim=1)
+            loss0 = torch.mean(focal_loss(y_pred0, y0, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
+            loss1 = torch.mean(focal_loss(y_pred1, y1, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
+            loss3 = torch.mean(focal_loss(y_pred3, y3, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
+            loss4 = torch.mean(focal_loss(y_pred4, y4, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
+            loss2 = focal_loss_mc(y_pred2, y2.view(-1), num_classes=self.num_labels[2],
+                                  alpha=self.alpha_mc, gamma=self.gamma_mc, alpha_t=self.alpha_t)
         else:
             loss0 = torch.mean(F.binary_cross_entropy(y_pred0, y0, reduction='none'), dim=1)
             loss1 = torch.mean(F.binary_cross_entropy(y_pred1, y1, reduction='none'), dim=1)
             loss3 = torch.mean(F.binary_cross_entropy(y_pred3, y3, reduction='none'), dim=1)
             loss4 = torch.mean(F.binary_cross_entropy(y_pred4, y4, reduction='none'), dim=1)
-        loss2 = F.cross_entropy(y_pred2, y2.view(-1), reduction='none')
+            loss2 = F.cross_entropy(y_pred2, y2.view(-1), reduction='none')
         return loss0, loss1, loss2, loss3, loss4
 
-    def forward(self, x, y0, y1, y2, y3, y4):
+    def forward(self, x, y0, y1, y2, y3, y4, reduction='sum'):
         loss0, loss1, loss2, loss3, loss4 = self.get_loss(x, y0, y1, y2, y3, y4)
-        loss = loss0*self.weights[0] + loss1*self.weights[1] + loss2*self.weights[2] + \
-               loss3*self.weights[3] + loss4*self.weights[4]
-        return loss
+        if reduction == 'sum':
+            return loss0*self.weights[0] + loss1*self.weights[1] + loss2*self.weights[2] + \
+                   loss3*self.weights[3] + loss4*self.weights[4]
+        elif reduction == 'none':
+            return loss0*self.weights[0], loss1*self.weights[1], loss2*self.weights[2], \
+                   loss3*self.weights[3], loss4*self.weights[4]
 
     def get_concat_probs(self, x):
         y_pred0, y_pred1, y_pred2, y_pred3, y_pred4 = self.get_probs(x)
@@ -100,10 +109,25 @@ class ArtCV(nn.Module):
                           y_pred3, y_pred4), dim=1)
 
 
-def focal_loss(inputs, targets, alpha=0.25, gamma=2):
+def focal_loss(inputs, targets, alpha=0.25, gamma=2, alpha_t=False):
     BCE_loss = F.binary_cross_entropy(inputs, targets, reduction='none')
     pt = torch.exp(-BCE_loss)
-    return alpha * (1-pt)**gamma * BCE_loss
+    if alpha_t:
+        return (-alpha * (targets * 2 -1) + targets) * (1-pt)**gamma * BCE_loss
+    else:
+        return alpha * (1-pt)**gamma * BCE_loss
+
+
+def focal_loss_mc(inputs, targets,
+                  num_classes, alpha=(0.25, 0.75, 0.75, 0.75, 0.75, 0.75), gamma=2, alpha_t=False):
+    targets_one_hot = F.one_hot(targets, num_classes=num_classes)
+    pt = inputs * targets_one_hot
+    one_sub_pt = 1 - pt
+    log_pt = targets_one_hot * torch.log(inputs + 1e-6)
+    if alpha_t:
+        return torch.sum((-torch.tensor(alpha))*one_sub_pt**gamma*log_pt, dim=-1)
+    else:
+        return torch.sum((-1)*one_sub_pt**gamma*log_pt, dim=-1)
 
 
 def get_weight_mat(y, ratio=10, base=10):
