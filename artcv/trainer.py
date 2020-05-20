@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.sampler import RandomSampler, SequentialSampler
 from tqdm import trange
 from artcv.utils import regularized_pred
+from artcv.model import focal_loss_mc
 
 
 class Trainer:
@@ -101,15 +102,24 @@ class Trainer:
                 if self.use_cuda and torch.cuda.is_available():
                     x = x.cuda()
                     y2 = y2.cuda()
-                loss = torch.mean(F.cross_entropy(self.model.classifiers['classifier2'](self.model.inference(x)).view(-1,
-                                                                                                self.model.num_labels[2]),
-                                                  y2.view(-1), reduction='none'))
+                if self.model.focal_loss:
+                    loss = torch.mean(focal_loss_mc(self.model.classifiers['classifier2'](self.model.inference(x)).view(-1,
+                                                                                                  self.model.num_labels[2]), 
+                                                    y2.view(-1), 
+                                                    num_classes=self.model.num_labels[2], 
+                                                    alpha=self.model.alpha_mc, 
+                                                    gamma=self.model.gamma_mc, 
+                                                    alpha_t=self.model.alpha_t))
+                else:
+                    loss = torch.mean(F.cross_entropy(self.model.classifiers['classifier2'](self.model.inference(x)).view(-1,
+                                                                                                  self.model.num_labels[2]),
+                                                      y2.view(-1), reduction='none'))
                 optim.zero_grad()
                 loss.backward()
                 if grad_clip:
                     torch.nn.utils.clip_grad_norm_(params, max_norm=max_norm)
                 optim.step()
-
+                
     def train(self, parameters=None, lr=1e-1, mc_lr=1e-1, betas=(0.9, 0.999), eps=1e-8, weight_decay=0,
               reduce_lr=False, step=5, gamma=0.8,
               reduce_lr_mc=False, step_mc=5, gamma_mc=0.8,

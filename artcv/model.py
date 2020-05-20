@@ -26,8 +26,8 @@ class ArtCV(nn.Module):
                  task=('ml', 'ml', 'mc', 'ml', 'ml'), weights=(1, 1, 1, 1, 1),
                  use_batch_norm=True, dropout_rate=0.01,
                  weight_path=None, freeze_cnn=False,
-                 focal_loss=False, alpha=0.25, alpha_mc=(0.25, 0.75, 0.75, 0.75, 0.75, 0.75),
-                 gamma_mc=2, gamma=2, alpha_t=True):
+                 focal_loss=False, alpha=(0.25, 0.25, 0.25, 0.25), alpha_mc=(0.25, 0.75, 0.75, 0.75, 0.75, 0.75),
+                 gamma_mc=2, gamma=(2, 2, 2, 2), alpha_t=True):
         super().__init__()
         self.tag = tag
         self.num_labels = num_labels
@@ -78,10 +78,10 @@ class ArtCV(nn.Module):
     def get_loss(self, x, y0, y1, y2, y3, y4):
         y_pred0, y_pred1, y_pred2, y_pred3, y_pred4 = self.get_probs(x)
         if self.focal_loss:
-            loss0 = torch.mean(focal_loss_ml(y_pred0, y0, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
-            loss1 = torch.mean(focal_loss_ml(y_pred1, y1, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
-            loss3 = torch.mean(focal_loss_ml(y_pred3, y3, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
-            loss4 = torch.mean(focal_loss_ml(y_pred4, y4, alpha=self.alpha, gamma=self.gamma, alpha_t=self.alpha_t), dim=1)
+            loss0 = torch.mean(focal_loss_ml(y_pred0, y0, alpha=self.alpha[0], gamma=self.gamma[0], alpha_t=self.alpha_t), dim=1)
+            loss1 = torch.mean(focal_loss_ml(y_pred1, y1, alpha=self.alpha[1], gamma=self.gamma[1], alpha_t=self.alpha_t), dim=1)
+            loss3 = torch.mean(focal_loss_ml(y_pred3, y3, alpha=self.alpha[2], gamma=self.gamma[2], alpha_t=self.alpha_t), dim=1)
+            loss4 = torch.mean(focal_loss_ml(y_pred4, y4, alpha=self.alpha[3], gamma=self.gamma[3], alpha_t=self.alpha_t), dim=1)
             loss2 = focal_loss_mc(y_pred2, y2.view(-1), num_classes=self.num_labels[2],
                                   alpha=self.alpha_mc, gamma=self.gamma_mc, alpha_t=self.alpha_t)
         else:
