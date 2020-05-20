@@ -206,9 +206,9 @@ class Trainer:
     def plot_running_loss(self, epochs_override=None):
         len_ticks = len(self.running_loss)
         if epochs_override is None:
-            x_axis = np.linspace(0, self.epochs, len_ticks)
+            x_axis = np.linspace(1, self.epochs, len_ticks)
         else:
-            x_axis = np.linspace(0, epochs_override, len_ticks)
+            x_axis = np.linspace(1, epochs_override, len_ticks)
         plt.figure()
         plt.plot(x_axis, self.running_loss)
         plt.xlabel('Number of epochs')
@@ -222,9 +222,9 @@ class Trainer:
         else:
             len_ticks = len(self.running_loss)
             if epochs_override is None:
-                x_axis = np.linspace(0, self.epochs, len_ticks)
+                x_axis = np.linspace(1, self.epochs, len_ticks)
             else:
-                x_axis = np.linspace(0, epochs_override, len_ticks)
+                x_axis = np.linspace(1, epochs_override, len_ticks)
             plt.figure()
             for i in range(0, 5):
                 log_array = np.array(self.loss_log[f'Head {i}'])
@@ -266,9 +266,9 @@ class Trainer:
     def loss_history_plot(self, epochs_override=None):
         len_ticks = len(self.loss_history_train)
         if epochs_override is None:
-            x_axis = np.linspace(0, self.epochs, len_ticks)
+            x_axis = np.linspace(1, self.epochs, len_ticks)
         else:
-            x_axis = np.linspace(0, epochs_override, len_ticks)
+            x_axis = np.linspace(1, epochs_override, len_ticks)
         plt.figure()
         if self.train_val:
             assert (len(self.loss_history_train) == len(self.loss_history_val))
@@ -405,9 +405,9 @@ class Trainer:
     def accuracy_history_plot(self, epochs_override=None):
         len_ticks = len(self.accuracy_history_train)
         if epochs_override is None:
-            x_axis = np.linspace(0, self.epochs, len_ticks)
+            x_axis = np.linspace(1, self.epochs, len_ticks)
         else:
-            x_axis = np.linspace(0, epochs_override, len_ticks)
+            x_axis = np.linspace(1, epochs_override, len_ticks)
         plt.figure()
         if self.train_val:
             assert (len(self.accuracy_history_train) == len(self.accuracy_history_val))
