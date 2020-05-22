@@ -39,6 +39,8 @@ class Trainer:
             self.loss_log['Head 2'] = []
             self.loss_log['Head 3'] = []
             self.loss_log['Head 4'] = []
+            if self.model.hierarchical:
+                self.loss_log['Head group classifier'] = []
 
         if self.train_val:
             if shuffle:
@@ -94,7 +96,7 @@ class Trainer:
               grad_clip=False, max_norm=1e-5):
         epochs = self.extra_epochs_mc
         self.model.classifiers['classifier2'].train()
-        params = filter(lambda x: x.requires_grad, self.model.classifiers['classifier2'].parameters()) \
+        params = filter(lambda x: x.requires_grad, self.model.parameters()) \
             if parameters is None else parameters
         optim = torch.optim.Adam(params, lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
         for epoch in range(epochs):
@@ -103,17 +105,17 @@ class Trainer:
                     x = x.cuda()
                     y2 = y2.cuda()
                 if self.model.focal_loss:
-                    loss = torch.mean(focal_loss_mc(self.model.classifiers['classifier2'](self.model.inference(x)).view(-1,
-                                                                                                  self.model.num_labels[2]), 
+                    loss = torch.mean(focal_loss_mc(self.model.classifiers['classifier2'](
+                        self.model.inference(x)).view(-1, self.model.num_labels[2]),
                                                     y2.view(-1), 
                                                     num_classes=self.model.num_labels[2], 
                                                     alpha=self.model.alpha_mc, 
                                                     gamma=self.model.gamma_mc, 
-                                                    alpha_t=self.model.alpha_t))
+                                                    alpha_t=self.model.alpha_t)*self.model.weights[2])
                 else:
-                    loss = torch.mean(F.cross_entropy(self.model.classifiers['classifier2'](self.model.inference(x)).view(-1,
-                                                                                                  self.model.num_labels[2]),
-                                                      y2.view(-1), reduction='none'))
+                    loss = torch.mean(F.cross_entropy(self.model.classifiers['classifier2'](
+                        self.model.inference(x)).view(-1, self.model.num_labels[2]),
+                                                      y2.view(-1), reduction='none')*self.model.weights[2])
                 optim.zero_grad()
                 loss.backward()
                 if grad_clip:
@@ -142,11 +144,19 @@ class Trainer:
                     head_loss2 = 0
                     head_loss3 = 0
                     head_loss4 = 0
+                    if self.model.hierarchical:
+                        head_loss_group = 0
                 for data_tensors in self.dataloader_train:
                     data_tensor_tuples = [data_tensors]
                     if self.head_log:
-                        loss0, loss1, loss2, loss3, loss4 = self.loss(*data_tensor_tuples, head_log=self.head_log)
-                        loss = torch.mean(loss0 + loss1 + loss2 + loss3 + loss4)
+                        if self.model.hierarchical:
+                            loss0, loss1, loss2, loss3, loss4, loss_group = self.loss(*data_tensor_tuples,
+                                                                                      head_log=self.head_log)
+                            loss = torch.mean(loss0 + loss1 + loss2 + loss3 + loss4 + loss_group)
+                            head_loss_group += torch.mean(loss_group).item()
+                        else:
+                            loss0, loss1, loss2, loss3, loss4 = self.loss(*data_tensor_tuples, head_log=self.head_log)
+                            loss = torch.mean(loss0 + loss1 + loss2 + loss3 + loss4)
                         head_loss0 += torch.mean(loss0).item()
                         head_loss1 += torch.mean(loss1).item()
                         head_loss2 += torch.mean(loss2).item()
@@ -167,6 +177,8 @@ class Trainer:
                     self.loss_log['Head 2'].append(head_loss2/len(self.dataloader_train))
                     self.loss_log['Head 3'].append(head_loss3/len(self.dataloader_train))
                     self.loss_log['Head 4'].append(head_loss4/len(self.dataloader_train))
+                    if self.model.hierarchical:
+                        self.loss_log['Head group classifier'].append(head_loss_group / len(self.dataloader_train))
 
                 if (epoch_idx+1) % step == 0 & reduce_lr:
                     for p in optim.param_groups:
@@ -206,8 +218,12 @@ class Trainer:
             y3 = y3.cuda()
             y4 = y4.cuda()
         if head_log:
-            loss0, loss1, loss2, loss3, loss4 = self.model(x, y0, y1, y2, y3, y4, reduction='none')
-            return loss0, loss1, loss2, loss3, loss4
+            if self.model.hierarchical:
+                loss0, loss1, loss2, loss3, loss4, loss_group = self.model(x, y0, y1, y2, y3, y4, reduction='none')
+                return loss0, loss1, loss2, loss3, loss4, loss_group
+            else:
+                loss0, loss1, loss2, loss3, loss4 = self.model(x, y0, y1, y2, y3, y4, reduction='none')
+                return loss0, loss1, loss2, loss3, loss4
         else:
             loss = torch.mean(self.model(x, y0, y1, y2, y3, y4, reduction='sum'))
             return loss
@@ -236,10 +252,10 @@ class Trainer:
             else:
                 x_axis = np.linspace(1, epochs_override, len_ticks)
             plt.figure()
-            for i in range(0, 5):
-                log_array = np.array(self.loss_log[f'Head {i}'])
-                plt.plot(x_axis, log_array/log_array[0], label=f'Head {i}')
-            plt.legend()
+            for key in self.loss_log.keys():
+                log_array = np.array(self.loss_log[key])
+                plt.plot(x_axis, log_array/log_array[0], label=key)
+            plt.legend(loc='lower left', bbox_to_anchor=(1, 0.25, 0.5, 0.5))
             plt.xlabel('Number of epochs')
             plt.ylabel('Estimated loss')
             plt.show()
@@ -293,9 +309,11 @@ class Trainer:
         plt.show()
 
     @torch.no_grad()
-    def get_probs(self, tag, return_probs_only=False):
+    def get_probs(self, tag, return_hier_pred=False, return_probs_only=False):
         self.model.eval()
         predictions_tem = []
+        if return_hier_pred:
+            hier_pred_tem = []
         if tag == 'test':
             _dataloader = self.dataloader_test
             for data_tensors in _dataloader:
@@ -335,14 +353,26 @@ class Trainer:
                     x = data_tensors
                     if self.use_cuda and torch.cuda.is_available():
                         x = x.cuda()
-                y_concat_prob = self.model.get_concat_probs(x)
+                if return_hier_pred:
+                    y_concat_prob, y_group_pred = self.model.get_concat_probs(x, return_hier_pred=return_hier_pred)
+                    hier_pred_tem += [y_group_pred]
+                else:
+                    y_concat_prob = self.model.get_concat_probs(x, return_hier_pred=return_hier_pred)
                 predictions_tem += [y_concat_prob]
             predictions_array = torch.cat(predictions_tem).detach().cpu().numpy()
+            if return_hier_pred:
+                hier_pred = torch.cat(hier_pred_tem).detach().cpu().numpy()
             self.model.train()
             if not return_probs_only:
-                return torch.cat(ground_truth).detach().cpu().numpy(), predictions_array
+                if return_hier_pred:
+                    return torch.cat(ground_truth).detach().cpu().numpy(), predictions_array, hier_pred
+                else:
+                    return torch.cat(ground_truth).detach().cpu().numpy(), predictions_array
             else:
-                return predictions_array
+                if return_hier_pred:
+                    return predictions_array, hier_pred
+                else:
+                    return predictions_array
 
     @torch.no_grad()
     def make_predictions(self, tag, return_pred_only=False,
@@ -401,6 +431,38 @@ class Trainer:
                 return torch.cat(ground_truth).detach().cpu().numpy(), predictions_array
             else:
                 return predictions_array
+
+    @torch.no_grad()
+    def compute_hier_acc(self, tag):
+        ground_truth = []
+        hier_pred_tem = []
+        if tag == 'train':
+            _dataloader = self.dataloader_train
+        elif tag == 'val':
+            _dataloader = self.dataloader_val
+        elif tag == 'all':
+            _dataloader = self.dataloader_all
+        else:
+            raise ValueError('Invalid tag!')
+        for data_tensors in _dataloader:
+            x, _, _, y2, _, _ = data_tensors
+            if self.use_cuda and torch.cuda.is_available():
+                x = x.cuda()
+                y2 = y2.cuda()
+            gt_oh = F.one_hot(y2, num_classes=6).squeeze()[:, 1:].long()
+            ground_truth += [torch.sum(gt_oh, dim=-1)]
+            if self.model.hierarchical:
+                _, y_group_pred = self.model.get_concat_probs(x, return_hier_pred=True)
+                hier_pred_tem += [y_group_pred]
+            else:
+                y_concat_prob = self.model.get_concat_probs(x, return_hier_pred=False)
+                hier_pred_tem += [torch.sum(y_concat_prob[:, 781:786], dim=-1)]
+        if self.model.hierarchical:
+            return np.mean(torch.cat(ground_truth).detach().cpu().numpy() ==
+                           np.where(torch.cat(hier_pred_tem).detach().cpu().numpy() == 1)[1])
+        else:
+            return np.mean(torch.cat(ground_truth).detach().cpu().numpy() ==
+                           torch.cat(hier_pred_tem).detach().cpu().numpy())
 
     @torch.no_grad()
     def compute_accuracy(self, tag,
