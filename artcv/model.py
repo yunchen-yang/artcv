@@ -27,7 +27,8 @@ class ArtCV(nn.Module):
                  task=('ml', 'ml', 'mc', 'ml', 'ml'), weights=(1, 1, 1, 1, 1),
                  use_batch_norm=True, dropout_rate=0.01,
                  weight_path=None, freeze_cnn=False,
-                 focal_loss=False, alpha=(0.25, 0.25, 0.25, 0.25), alpha_mc=(0.25, 0.75, 0.75, 0.75, 0.75, 0.75),
+                 focal_loss=False, focal_loss_mc=False, alpha_t_mc=True,
+                 alpha=(0.25, 0.25, 0.25, 0.25), alpha_mc=(0.25, 0.75, 0.75, 0.75, 0.75, 0.75),
                  gamma_mc=2, gamma=(2, 2, 2, 2), alpha_t=True, alpha_group=(1, 1), gamma_group=2,
                  hierarchical=False, label_groups=(0, 1, 1, 1, 1, 1), group_classifier_kwargs=dict(),
                  weight_group=None):
@@ -43,14 +44,17 @@ class ArtCV(nn.Module):
         self.weight_path = weight_path
         self.freeze_cnn = freeze_cnn
         self.focal_loss = focal_loss
+        self.focal_loss_mc = focal_loss_mc
         self.hierarchical = hierarchical
 
         if self.focal_loss:
             self.alpha = alpha
-            self.alpha_mc =alpha_mc
             self.gamma = gamma
-            self.gamma_mc = gamma_mc
             self.alpha_t = alpha_t
+        if self.focal_loss_mc:
+            self.alpha_mc =alpha_mc
+            self.gamma_mc = gamma_mc
+            self.alpha_t_mc = alpha_t_mc
             if self.hierarchical:
                 self.alpha_group = alpha_group
                 self.gamma_group = gamma_group
@@ -122,21 +126,21 @@ class ArtCV(nn.Module):
     def get_loss_mc(self, x, y2, reduction='sum'):
         if self.hierarchical:
             y_pred2, y_group2 = self.get_probs_mc(self.inference(x))
-            if self.focal_loss:
+            if self.focal_loss_mc:
                 loss_group = focal_loss_mc(y_group2,
                                            torch.tensor(list(map(lambda x: self.label_groups[x],
                                                                  y2.view(-1)))).view(-1),
                                            num_classes=self.num_groups, alpha=self.alpha_group,
-                                           gamma=self.gamma_group, alpha_t=self.alpha_t)
+                                           gamma=self.gamma_group, alpha_t=self.alpha_t_mc)
             else:
                 loss_group = F.cross_entropy(y_group2,
                                              torch.tensor(list(map(lambda x: self.label_groups[x],
                                                                    y2.view(-1)))).view(-1), reduction='none')
         else:
             y_pred2 = self.get_probs_mc(self.inference(x))
-        if self.focal_loss:
+        if self.focal_loss_mc:
             loss2 = focal_loss_mc(y_pred2, y2.view(-1), num_classes=self.num_labels[2],
-                                  alpha=self.alpha_mc, gamma=self.gamma_mc, alpha_t=self.alpha_t)
+                                  alpha=self.alpha_mc, gamma=self.gamma_mc, alpha_t=self.alpha_t_mc)
         else:
             loss2 = F.cross_entropy(y_pred2, y2.view(-1), reduction='none')
 
@@ -151,12 +155,12 @@ class ArtCV(nn.Module):
     def get_loss(self, x, y0, y1, y2, y3, y4):
         if self.hierarchical:
             y_pred0, y_pred1, y_pred2, y_pred3, y_pred4, y_group2 = self.get_probs(x)
-            if self.focal_loss:
+            if self.focal_loss_mc:
                 loss_group = focal_loss_mc(y_group2,
                                            torch.tensor(list(map(lambda x: self.label_groups[x],
                                                                  y2.view(-1)))).view(-1),
                                            num_classes=self.num_groups, alpha=self.alpha_group,
-                                           gamma=self.gamma_group, alpha_t=self.alpha_t)
+                                           gamma=self.gamma_group, alpha_t=self.alpha_t_mc)
             else:
                 loss_group = F.cross_entropy(y_group2,
                                              torch.tensor(list(map(lambda x: self.label_groups[x],
@@ -172,14 +176,15 @@ class ArtCV(nn.Module):
                                              alpha_t=self.alpha_t), dim=1)
             loss4 = torch.mean(focal_loss_ml(y_pred4, y4, alpha=self.alpha[3], gamma=self.gamma[3],
                                              alpha_t=self.alpha_t), dim=1)
-            loss2 = focal_loss_mc(y_pred2, y2.view(-1), num_classes=self.num_labels[2],
-                                  alpha=self.alpha_mc, gamma=self.gamma_mc, alpha_t=self.alpha_t)
-
         else:
             loss0 = torch.mean(F.binary_cross_entropy(y_pred0, y0, reduction='none'), dim=1)
             loss1 = torch.mean(F.binary_cross_entropy(y_pred1, y1, reduction='none'), dim=1)
             loss3 = torch.mean(F.binary_cross_entropy(y_pred3, y3, reduction='none'), dim=1)
             loss4 = torch.mean(F.binary_cross_entropy(y_pred4, y4, reduction='none'), dim=1)
+        if self.focal_loss_mc:
+            loss2 = focal_loss_mc(y_pred2, y2.view(-1), num_classes=self.num_labels[2],
+                                  alpha=self.alpha_mc, gamma=self.gamma_mc, alpha_t=self.alpha_t_mc)
+        else:
             loss2 = F.cross_entropy(y_pred2, y2.view(-1), reduction='none')
         if self.hierarchical:
             return loss0, loss1, loss2, loss3, loss4, loss_group
