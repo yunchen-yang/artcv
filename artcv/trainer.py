@@ -104,7 +104,7 @@ class Trainer:
                 if self.use_cuda and torch.cuda.is_available():
                     x = x.cuda()
                     y2 = y2.cuda()
-                if self.model.focal_loss:
+                if self.model.focal_loss_mc:
                     loss = torch.mean(focal_loss_mc(self.model.classifiers['classifier2'](
                         self.model.inference(x)).view(-1, self.model.num_labels[2]),
                                                     y2.view(-1), 
