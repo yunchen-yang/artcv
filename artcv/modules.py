@@ -76,17 +76,3 @@ class Classifier(nn.Module):
             return torch.sigmoid(self.get_logits(x))
         else:
             raise ValueError("The task tag must be either 'ml' (multi-label) or 'mc' (multi-class)!")
-            
-
-class FocalLoss(nn.Module):
-    def __init__(self, alpha=0.25, gamma=2):
-        super(FocalLoss, self).__init__()
-        self.alpha = alpha
-        self.gamma = gamma
-
-    def forward(self, inputs, targets):
-        BCE_loss = F.binary_cross_entropy(inputs, targets, reduction='none')
-        pt = torch.exp(-BCE_loss)
-        return self.alpha * (1-pt)**self.gamma * BCE_loss
-
-        

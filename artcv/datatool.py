@@ -52,7 +52,8 @@ class ImgTestset(Dataset):
 
 class TrainValSet:
     def __init__(self, ext='png', path=None, indices=None, dimension=256, data_info_path=None, labels_info_path=None,
-                 task=('ml', 'ml', 'mc', 'ml', 'ml'), train_transform='train', train_val_split=0.7, seed=0, test_path=None):
+                 task=('ml', 'ml', 'mc', 'ml', 'ml'), train_transform='train', train_val_split=0.7, seed=0,
+                 test_path=None, test_csv_path=None):
         super().__init__()
         self.ext = ext
         self.dimension = dimension
@@ -86,7 +87,12 @@ class TrainValSet:
         self.task = task
 
         if self.test_path is not None:
-            self.X_test = glob(f'{self.test_path}/*.{ext}', recursive=True)
+            self.test_csv_path = test_csv_path
+            if self.test_csv_path is not None:
+                self.test_csv = pd.read_csv(self.test_csv_path)
+                self.X_test = [f'{self.test_path}/{_filename}.{self.ext}' for _filename in list(self.test_csv['id'])]
+            else:
+                self.X_test = glob(f'{self.test_path}/*.{self.ext}', recursive=True)
             self.test = ImgTestset(self.X_test, dimension=256, transform='val', grey_scale=False)
 
         self.train_val_split = train_val_split

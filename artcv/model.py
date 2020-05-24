@@ -25,7 +25,7 @@ class ArtCV(nn.Module):
     def __init__(self, tag='18', num_labels=(100, 681, 6, 1920, 768),
                  classifier_layers=(1, 1, 1, 1, 1), classifier_hidden=(2048, 2048, 2048, 2048, 2048),
                  task=('ml', 'ml', 'mc', 'ml', 'ml'), weights=(1, 1, 1, 1, 1),
-                 use_batch_norm=True, dropout_rate=0.01,
+                 use_batch_norm=True, dropout_rate=0.1,
                  weight_path=None, freeze_cnn=False,
                  focal_loss=False, focal_loss_mc=False, alpha_t_mc=True,
                  alpha=(0.25, 0.25, 0.25, 0.25), alpha_mc=(0.25, 0.75, 0.75, 0.75, 0.75, 0.75),
