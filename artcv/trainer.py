@@ -15,7 +15,7 @@ from artcv.model import focal_loss_mc
 
 class Trainer:
     def __init__(self, model, dataset, use_cuda=True,
-                 shuffle=True, epochs=100, extra_epochs_mc=1,
+                 shuffle=True, epochs=100, extra_epochs_mc=1, train_mc_step=1, 
                  batch_size_train=64, batch_size_val=64, batch_size_all=64, batch_size_test=64,
                  head_log=True,
                  monitor_frequency=False, compute_acc=True, printout=False,
@@ -30,6 +30,7 @@ class Trainer:
             torch.set_default_tensor_type(torch.cuda.FloatTensor)
         self.epochs = epochs
         self.extra_epochs_mc = extra_epochs_mc
+        self.train_mc_step = train_mc_step
         self.head_log = head_log
         self.running_loss = []
         if self.head_log:
@@ -96,6 +97,8 @@ class Trainer:
               grad_clip=False, max_norm=1e-5):
         epochs = self.extra_epochs_mc
         self.model.classifiers['classifier2'].train()
+        if self.model.hierarchical:
+            self.model.group_classifier.train()
         params = filter(lambda x: x.requires_grad, self.model.parameters()) \
             if parameters is None else parameters
         optim = torch.optim.Adam(params, lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
@@ -104,18 +107,19 @@ class Trainer:
                 if self.use_cuda and torch.cuda.is_available():
                     x = x.cuda()
                     y2 = y2.cuda()
-                if self.model.focal_loss_mc:
-                    loss = torch.mean(focal_loss_mc(self.model.classifiers['classifier2'](
-                        self.model.inference(x)).view(-1, self.model.num_labels[2]),
-                                                    y2.view(-1), 
-                                                    num_classes=self.model.num_labels[2], 
-                                                    alpha=self.model.alpha_mc, 
-                                                    gamma=self.model.gamma_mc, 
-                                                    alpha_t=self.model.alpha_t)*self.model.weights[2])
-                else:
-                    loss = torch.mean(F.cross_entropy(self.model.classifiers['classifier2'](
-                        self.model.inference(x)).view(-1, self.model.num_labels[2]),
-                                                      y2.view(-1), reduction='none')*self.model.weights[2])
+                loss = torch.mean(self.model.get_loss_mc(x, y2)
+#                 if self.model.focal_loss_mc:
+#                     loss = torch.mean(focal_loss_mc(self.model.classifiers['classifier2'](
+#                         self.model.inference(x)).view(-1, self.model.num_labels[2]),
+#                                                     y2.view(-1), 
+#                                                     num_classes=self.model.num_labels[2], 
+#                                                     alpha=self.model.alpha_mc, 
+#                                                     gamma=self.model.gamma_mc, 
+#                                                     alpha_t=self.model.alpha_t)*self.model.weights[2])
+#                 else:
+#                     loss = torch.mean(F.cross_entropy(self.model.classifiers['classifier2'](
+#                         self.model.inference(x)).view(-1, self.model.num_labels[2]),
+#                                                       y2.view(-1), reduction='none')*self.model.weights[2])
                 optim.zero_grad()
                 loss.backward()
                 if grad_clip:
@@ -132,7 +136,8 @@ class Trainer:
         params = filter(lambda x: x.requires_grad, self.model.parameters()) \
             if parameters is None else parameters
         optim = torch.optim.Adam(params, lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
-
+        if bool(self.extra_epochs_mc):
+            epoch_count_mc = 0
         with trange(epochs, desc='Training progress: ', file=sys.stdout) as progbar:
             for epoch_idx in progbar:
                 self.before_iter()
@@ -184,10 +189,6 @@ class Trainer:
                     for p in optim.param_groups:
                         p['lr'] *= gamma
 
-                if bool(self.extra_epochs_mc):
-                    if (epoch_idx + 1) % step_mc == 0 & reduce_lr_mc:
-                        mc_lr *= gamma_mc
-
                 if bool(self.monitor_frequency):
                     if (epoch_idx + 1) % self.monitor_frequency == 0:
                         current_loss_train = self.compute_loss(tag='train')
@@ -204,8 +205,12 @@ class Trainer:
                         if self.printout:
                             print("After %i epochs, loss is %f and prediction accuracy is %f."
                                   % (epoch_idx, current_loss_train, current_accuracy_train))
-                if bool(self.extra_epochs_mc):
+                if bool(self.extra_epochs_mc) & (epoch_idx + 1) % self.train_mc_step == 0:
                     self.train_mc(lr=mc_lr, **train_mc_kwargs)
+                    epoch_count_mc += 1
+                    if epoch_count_mc % step_mc == 0 & reduce_lr_mc:
+                        mc_lr *= gamma_mc
+                                  
                 self.after_iter()
 
     def loss(self, data_tensors, head_log=False):
