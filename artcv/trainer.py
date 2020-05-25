@@ -10,7 +10,6 @@ from torch.utils.data import DataLoader
 from torch.utils.data.sampler import RandomSampler, SequentialSampler
 from tqdm import trange
 from artcv.utils import regularized_pred
-from artcv.model import focal_loss_mc
 
 
 class Trainer:
@@ -41,7 +40,7 @@ class Trainer:
             self.loss_log['Head 3'] = []
             self.loss_log['Head 4'] = []
             if self.model.hierarchical:
-                self.loss_log['Head group classifier'] = []
+                self.loss_log['Head group classifiers'] = []
 
         if self.train_val:
             if shuffle:
@@ -148,7 +147,8 @@ class Trainer:
                             loss = torch.mean(loss0 + loss1 + loss2 + loss3 + loss4 + loss_group)
                             head_loss_group += torch.mean(loss_group).item()
                         else:
-                            loss0, loss1, loss2, loss3, loss4 = self.loss(*data_tensor_tuples, head_log=self.head_log)
+                            loss0, loss1, loss2, loss3, loss4, _ = self.loss(*data_tensor_tuples,
+                                                                             head_log=self.head_log)
                             loss = torch.mean(loss0 + loss1 + loss2 + loss3 + loss4)
                         head_loss0 += torch.mean(loss0).item()
                         head_loss1 += torch.mean(loss1).item()
@@ -171,7 +171,7 @@ class Trainer:
                     self.loss_log['Head 3'].append(head_loss3/len(self.dataloader_train))
                     self.loss_log['Head 4'].append(head_loss4/len(self.dataloader_train))
                     if self.model.hierarchical:
-                        self.loss_log['Head group classifier'].append(head_loss_group / len(self.dataloader_train))
+                        self.loss_log['Head group classifiers'].append(head_loss_group / len(self.dataloader_train))
 
                 if (epoch_idx+1) % step == 0 & reduce_lr:
                     for p in optim.param_groups:
@@ -211,12 +211,9 @@ class Trainer:
             y3 = y3.cuda()
             y4 = y4.cuda()
         if head_log:
-            if self.model.hierarchical:
-                loss0, loss1, loss2, loss3, loss4, loss_group = self.model(x, y0, y1, y2, y3, y4, reduction='none')
-                return loss0, loss1, loss2, loss3, loss4, loss_group
-            else:
-                loss0, loss1, loss2, loss3, loss4 = self.model(x, y0, y1, y2, y3, y4, reduction='none')
-                return loss0, loss1, loss2, loss3, loss4
+            loss0, loss1, loss2, loss3, loss4, loss_group = self.model(x, y0, y1, y2, y3, y4, reduction='none')
+            return loss0, loss1, loss2, loss3, loss4, loss_group
+
         else:
             loss = torch.mean(self.model(x, y0, y1, y2, y3, y4, reduction='sum'))
             return loss
