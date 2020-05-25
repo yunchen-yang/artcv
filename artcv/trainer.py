@@ -107,19 +107,7 @@ class Trainer:
                 if self.use_cuda and torch.cuda.is_available():
                     x = x.cuda()
                     y2 = y2.cuda()
-                loss = torch.mean(self.model.get_loss_mc(x, y2)
-#                 if self.model.focal_loss_mc:
-#                     loss = torch.mean(focal_loss_mc(self.model.classifiers['classifier2'](
-#                         self.model.inference(x)).view(-1, self.model.num_labels[2]),
-#                                                     y2.view(-1), 
-#                                                     num_classes=self.model.num_labels[2], 
-#                                                     alpha=self.model.alpha_mc, 
-#                                                     gamma=self.model.gamma_mc, 
-#                                                     alpha_t=self.model.alpha_t)*self.model.weights[2])
-#                 else:
-#                     loss = torch.mean(F.cross_entropy(self.model.classifiers['classifier2'](
-#                         self.model.inference(x)).view(-1, self.model.num_labels[2]),
-#                                                       y2.view(-1), reduction='none')*self.model.weights[2])
+                loss = torch.mean(self.model.get_loss_mc(x, y2))
                 optim.zero_grad()
                 loss.backward()
                 if grad_clip:
