@@ -1,0 +1,682 @@
+,attributeID,cluster,tier2
+100,100,3,abruzzi
+101,101,6,abruzzi (pescocostanzo)
+102,102,3,abruzzi and calabria
+106,106,4,aegean
+107,107,7,afghan
+108,108,7,african
+109,109,11,after british
+110,110,11,after british original
+111,111,11,after german
+112,112,11,after german original
+113,113,11,after italian
+114,114,11,after italian original
+115,115,11,after russian original
+116,116,2,akan peoples
+117,117,4,akkadian
+119,119,9,alexandria
+120,120,9,alexandria-hadra
+121,121,5,algerian
+122,122,3,alsace
+123,123,11,amber
+124,124,11,american
+125,125,11,american or british
+126,126,11,american or european
+127,127,11,american or french
+128,128,11,american or german
+129,129,2,amhara or tigrinya peoples
+130,130,12,amsterdam
+131,131,13,ancient kingdom of kashmir
+132,132,7,and  bhutanese and nepalese
+133,133,10,anglo-saxon
+135,135,12,antwerp
+137,137,5,arabian
+138,138,3,aragon
+139,139,0,arapaho
+140,140,10,archaic
+141,141,8,arica
+142,142,5,armenian
+143,143,2,asante
+144,144,7,asia minor
+145,145,1,assam
+146,146,4,assyrian
+147,147,10,assyro-babylonian
+148,148,13,atlantic watershed
+149,149,11,attic
+150,150,12,augsburg
+151,151,12,augsburg decoration
+152,152,12,augsburg original
+153,153,5,austrian
+154,154,11,austrian or german
+155,155,4,avar
+156,156,10,avar or byzantine
+157,157,3,avignon
+158,158,9,avon
+159,159,0,aztec
+160,160,4,babylonian
+161,161,10,babylonian or achaemenid
+162,162,10,babylonian or kassite
+163,163,13,bactria-margiana archaeological complex
+164,164,14,bahia
+165,165,5,balinese
+166,166,1,baluchistan
+167,167,6,bangladesh or india (bengal)
+168,168,9,battersea
+169,169,12,bavaria
+170,170,12,bavarian
+171,171,8,bayreuth
+173,173,3,beauvais
+174,174,5,belgian
+175,175,12,berlin
+176,176,8,bhutanese
+177,177,1,bihar
+178,178,9,birmingham
+180,180,10,bohemian
+181,181,3,bologna
+182,182,3,bordeaux
+184,184,11,bow
+185,185,3,brabant
+186,186,3,brescia
+187,187,9,bristol
+188,188,11,british
+189,189,6,british (american market)
+190,190,11,british and french
+191,191,11,british or american
+192,192,11,british or french
+193,193,11,british or irish
+194,194,11,british or scottish
+195,195,9,brunswick
+196,196,12,brussels
+197,197,9,buckinghamshire
+198,198,5,bulgarian
+199,199,8,burano
+200,200,7,burma
+201,201,8,burslem
+202,202,10,byzantine
+204,204,6,calima (yotoco)
+206,206,7,cambodia
+208,208,4,canaanite
+209,209,11,canada
+211,211,13,cape prince of wales
+214,214,3,castel durante
+215,215,5,catalan
+216,216,14,catalonia
+217,217,5,caucasian
+219,219,10,celtic
+220,220,10,celtic or roman
+221,221,13,central asia
+222,222,13,central coast
+223,223,13,central european
+224,224,13,central highlands
+225,225,11,central italian
+227,227,9,chantilly
+228,228,3,chaumont-sur-loire
+229,229,9,chelsea
+230,230,9,chelsea-derby
+232,232,11,chimú or chancay
+233,233,7,china
+234,234,6,china ( turkestan)
+235,235,7,china or japan
+236,236,11,chinese for export
+237,237,11,chinese with dutch decoration
+238,238,11,chinese with european decoration
+239,239,11,chinese with french mounts
+240,240,8,chiriqui
+242,242,8,christiania
+243,243,0,chumash
+245,245,8,coalport
+247,247,6,coclé (macaracas)
+248,248,6,coclé (parita)
+249,249,8,colima
+250,250,14,colombia
+251,251,13,colonial
+252,252,13,colonial american
+253,253,2,congolese
+254,254,13,continental european
+255,255,12,copenhagen
+256,256,5,coptic
+257,257,4,corinthian
+258,258,13,coromandel coast
+259,259,14,costa rica
+260,260,14,costa rica or panama
+261,261,4,cretan
+262,262,3,crete
+263,263,10,crusader
+264,264,4,cyclades
+265,265,4,cycladic
+266,266,5,cypriot
+267,267,10,cypriot or phoenician
+268,268,5,czech
+269,269,5,danish
+270,270,1,deccan
+272,272,12,delft
+273,273,9,derby
+275,275,9,devonshire
+276,276,13,djenné peoples
+277,277,2,dogon peoples
+278,278,12,dresden
+279,279,9,dublin
+280,280,11,dutch
+281,281,11,dutch or british
+283,283,13,east germanic
+284,284,13,east greek
+285,285,13,east greek/sardis
+286,286,13,eastern
+287,287,13,eastern mediterranean
+288,288,13,eastern mediterranean or italian
+289,289,14,ecuador
+291,291,8,ecuadorian
+292,292,7,ecuadorian and philippine
+293,293,9,edinburgh
+294,294,9,edinburgh and glasgow
+295,295,2,edo peoples
+297,297,7,egypt
+299,299,4,etruria
+300,300,4,etruscan
+301,301,10,etruscan or italic
+302,302,10,etruscan or roman
+303,303,10,etrusco-corinthian
+305,305,11,european
+306,306,11,european bronze age
+307,307,11,european or american
+308,308,13,european or middle eastern
+309,309,8,faenza
+311,311,11,fang people
+312,312,3,façon de venise
+313,313,3,ferrara
+314,314,5,flemish
+315,315,11,flemish or italian
+316,316,3,florence
+317,317,3,florence or siena
+318,318,13,florence or vicinity
+319,319,11,for american market
+320,320,11,for british market
+321,321,11,for british or american market
+322,322,6,for continental ( french) market
+323,323,11,for continental market
+324,324,11,for danish market
+325,325,11,for dutch market
+326,326,11,for european market
+327,327,11,for export market
+328,328,11,for french market
+329,329,11,for iberian market
+330,330,11,for portuguese market
+331,331,11,for russian market
+332,332,11,for scottish market
+333,333,11,for swedish market
+334,334,12,france
+335,335,5,franco-flemish
+336,336,14,franco-netherlandish
+338,338,4,frankish
+339,339,4,frankish or burgundian
+340,340,12,freiburg im breisgau
+341,341,11,french
+342,342,6,french (breton)
+343,343,11,french or british
+344,344,11,french or dutch
+345,345,11,french or flemish
+346,346,11,french or german
+347,347,11,french or italian
+348,348,11,french or spanish
+349,349,11,french or swiss
+350,350,8,fulda
+352,352,10,gallo-roman
+353,353,2,gaul
+354,354,12,geneva
+355,355,3,genoa
+357,357,5,georgian
+358,358,11,german
+359,359,11,german and italian
+360,360,11,german or austrian
+361,361,11,german or british
+362,362,11,german or dutch
+363,363,11,german or french
+364,364,11,german or netherlandish
+365,365,11,german or south netherlandish
+366,366,11,german or swiss
+370,370,10,greek
+371,371,13,greek islands
+372,372,10,greek or achaemenid
+373,373,10,greek or cypriot
+374,374,10,greek or etruscan
+375,375,10,greek or roman
+376,376,9,greenwich
+377,377,14,guanacaste-nicoya
+378,378,14,guatemala
+380,380,14,guerrero
+382,382,8,gurkha
+383,383,8,guyanese
+384,384,0,haida
+385,385,8,hanau
+386,386,9,hanley
+387,387,9,harlingen
+389,389,3,haute-savoie
+391,391,13,highlands
+392,392,10,hilt
+393,393,4,hittite
+395,395,5,hungarian
+396,396,6,hungarian (slovakia)
+397,397,9,huron
+399,399,10,ibero-roman
+400,400,2,ica
+401,401,11,ijebu group
+402,402,10,imari type
+403,403,0,inca
+404,404,7,india
+405,405,6,india (bengal) or bangladesh
+406,406,6,india (bihar or west bengal)
+407,407,6,india (bihar)
+408,408,6,india (gujarat)
+409,409,6,india (karnataka)
+410,410,6,india (madhya pradesh)
+411,411,6,india (orissa)
+412,412,6,india (tamil nadu)
+413,413,6,indian (bengal)
+414,414,6,indian (north)
+415,415,7,indian or nepalese
+416,416,7,indo-persian
+417,417,7,indonesia
+418,418,6,indonesia (central java)
+419,419,6,indonesia (java)
+420,420,6,indonesia (sumatra)
+421,421,7,indonesian
+422,422,0,indus
+423,423,0,inuit
+424,424,7,iran
+425,425,6,iranian (persian)
+426,426,11,irish
+427,427,6,isin-larsa
+428,428,10,isin-larsa–old babylonian
+429,429,7,islamic
+430,430,4,israelite
+431,431,12,istanbul
+432,432,11,italian
+433,433,6,italian (cremona)
+434,434,6,italian (tuscany)
+435,435,6,italian (venice)
+436,436,6,italian (venice)
+437,437,11,italian or british
+438,438,11,italian or flemish
+439,439,11,italian or french
+440,440,11,italian or german
+441,441,11,italian or greek
+442,442,11,italian or sicilian
+443,443,11,italian or spanish
+444,444,11,italian or turkish
+445,445,13,italian peninsula
+446,446,11,italian
+447,447,10,italic-native
+448,448,7,japan
+449,449,6,japan (ryūkyū islands)
+450,450,4,javanese
+451,451,6,jouy-en-josas
+452,452,13,kathmandu valley
+453,453,7,kazakhstan
+454,454,2,kenyan
+456,456,6,kievan rus'
+457,457,7,korea
+460,460,14,la rochelle
+462,462,6,lambayeque (sicán)
+463,463,9,lambeth
+465,465,10,langobardic or byzantine
+466,466,10,late roman
+467,467,3,leuven
+468,468,3,liguria
+469,469,3,lille
+470,470,12,limoges
+471,471,12,lisbon
+472,472,9,liverpool
+473,473,3,lombardy
+474,474,9,london
+475,475,11,london original
+476,476,9,longton
+477,477,9,longton hall
+478,478,9,lowestoft
+482,482,4,lydian
+483,483,9,lyons
+484,484,8,macao
+485,485,5,macedonian
+486,486,11,made for export
+487,487,6,madrid (buen retiro)
+488,488,8,malagasy
+489,489,8,malayan
+490,490,2,mali
+492,492,11,maori people
+493,493,7,maya
+495,495,8,meissen
+496,496,11,meissen with german
+497,497,4,melanesian
+499,499,11,mennecy or sceaux
+500,500,4,merovingian
+502,502,14,mexico
+504,504,14,michoacan
+505,505,3,milan
+507,507,4,minoan
+510,510,4,moche
+511,511,6,moche (loma negra)
+512,512,4,moche-wari
+513,513,7,mongolian or tibetan
+514,514,6,montauban (toulouse mint)
+516,516,2,moro
+517,517,5,moroccan
+518,518,12,moscow
+520,520,2,mughal
+523,523,3,mulhouse
+524,524,12,munich
+525,525,4,mycenaean
+528,528,1,nalanda
+529,529,3,nantes
+530,530,3,nantes or  rouen
+531,531,3,nantes or rouen
+532,532,9,naples
+533,533,8,nasca
+534,534,11,native american
+535,535,6,native american (hawaiian) polynesian
+536,536,6,native american (hopi)
+537,537,3,naxos
+538,538,14,nayarit
+539,539,10,neo-sumerian
+540,540,0,neolithic
+541,541,7,nepal
+542,542,6,nepal (kathmandu valley)
+544,544,12,neuwied am rhein
+545,545,3,nevers
+546,546,11,new zealand
+548,548,13,north america
+549,549,6,north america (alaska)
+550,550,13,north china
+551,551,13,north china and south-central inner mongolia
+552,552,13,north coast
+553,553,13,north french
+554,554,13,north indian
+555,555,13,north italian
+556,556,13,north netherlandish
+557,557,9,northamptonshire
+558,558,13,northeast china
+559,559,13,northern european
+560,560,13,northern italian
+561,561,13,northwest china
+562,562,13,northwest china/eastern central asia
+563,563,5,norwegian
+564,564,12,nuremberg
+565,565,12,nuremberg original
+567,567,13,oceanic
+568,568,0,ojibwa
+569,569,13,old assyrian trading colony
+570,570,13,old bering sea
+571,571,0,olmec
+574,574,10,ottoman
+575,575,10,ottoman or tatar
+576,576,12,owo group
+577,577,3,padua
+579,579,7,pakistan
+580,580,6,pakistan (ancient region of gandhara)
+581,581,6,pakistan (baluchistan)
+582,582,3,palermo
+583,583,5,palestinian
+585,585,12,paris
+586,586,4,parthian
+587,587,10,parthian or sasanian
+589,589,9,pennsylvania
+590,590,5,persian
+591,591,14,peru
+592,592,14,peru
+593,593,14,peru
+594,594,14,peru
+595,595,14,peru
+596,596,0,peruvian
+597,597,0,peruvian
+598,598,0,peruvian
+599,599,3,pesaro
+600,600,7,philippine
+601,601,0,phoenician
+602,602,4,phrygian
+603,603,9,piedmont
+604,604,11,polish
+606,606,4,pontic
+608,608,5,portuguese
+609,609,12,potsdam
+610,610,12,potsdam or zechlin
+612,612,12,prague
+613,613,6,proto-elamite
+614,614,13,provincial
+615,615,4,ptolemaic
+616,616,13,punjab hills
+618,618,0,quechua
+620,620,14,quito
+622,622,1,rajasthan
+625,625,8,rhineland
+626,626,14,rhodes
+627,627,10,roman or byzantine
+628,628,5,romanian
+629,629,3,rome
+630,630,11,rome or florence
+631,631,3,rouen
+632,632,11,russian
+633,633,11,saint-cloud
+634,634,11,saint-porchaire or paris
+636,636,12,salzburg
+637,637,14,san sabastìan
+638,638,4,sardinian
+642,642,11,sasanian or islamic
+643,643,7,saudi arabian
+644,644,3,savoy
+645,645,8,saxony
+647,647,5,scottish
+648,648,4,scythian
+650,650,10,seleucid or parthian
+651,651,3,seville
+652,652,11,shaker
+653,653,9,sheffield
+654,654,0,siberia
+655,655,3,sicily
+656,656,3,siena
+658,658,8,silesia
+661,661,9,smyrna
+662,662,12,solingen
+663,663,13,south african
+664,664,13,south french
+665,665,13,south german
+666,666,13,south indian
+667,667,13,south italian
+668,668,6,south italian (daunian)
+669,669,13,south netherlandish
+670,670,11,south netherlandish or german
+671,671,13,south staffordshire
+672,672,1,southall
+673,673,13,southern and northern cheyenne
+674,674,13,southern france
+675,675,13,southern german
+676,676,11,southern german or swiss
+677,677,13,southern india
+678,678,13,southern italy
+679,679,14,spain
+680,680,11,spanish or french
+681,681,11,spanish or italian
+682,682,11,spanish or mexican
+683,683,4,spitalfields
+684,684,7,sri lankan
+685,685,9,st. petersburg
+686,686,9,staffordshire
+687,687,12,stockholm
+688,688,9,stoke-on-trent
+689,689,3,strasbourg
+690,690,12,stuttgart
+691,691,2,sudanese
+692,692,8,sulawesi
+693,693,8,sumatran
+694,694,0,sumerian
+695,695,9,surrey
+696,696,5,swedish
+697,697,11,swiss
+698,698,11,swiss or german
+699,699,12,switzerland
+700,700,5,syrian
+701,701,5,syro-anatolian-levantine
+704,704,11,tairona people
+705,705,11,tairona people
+706,706,1,tamil nadu
+710,710,2,tellem peoples
+711,711,4,teotihuacan
+712,712,7,thai
+713,713,6,thailand (ban chiang)
+714,714,7,thailand or cambodia
+715,715,1,thanjavur
+716,716,1,thanjavur district
+717,717,1,thanjavur
+718,718,12,the hague
+719,719,4,thessaly
+720,720,8,thuringia
+721,721,6,thuringia (gotha)
+722,722,7,tibet
+723,723,6,tibet (central asia)
+724,724,11,tibetan or chinese
+727,727,0,tlingit
+728,728,6,tolita-tumaco
+731,731,2,tula
+732,732,3,turin
+733,733,4,turkestan
+734,734,5,turkish
+735,735,3,tuscany
+736,736,3,tyrol
+738,738,1,udaipur
+739,739,3,umbria
+740,740,13,united states
+741,741,13,upper rhenish
+743,743,3,urbino
+744,744,3,urbino with gubbio luster
+745,745,8,valdivia
+746,746,14,valencia
+747,747,3,venetian or façon de venise
+748,748,3,veneto
+749,749,3,venice
+750,750,6,venice (murano)
+751,751,11,venice or french
+752,752,11,venice or german
+753,753,11,venice or turkish
+754,754,11,venice original
+755,755,14,veracruz
+758,758,3,verona
+759,759,3,versailles
+761,761,12,vienna
+762,762,7,vietnam
+763,763,6,vietnam (north)
+765,765,8,villeroy
+766,766,3,vincennes
+767,767,1,visayas
+770,770,4,wari
+771,771,13,west slavic
+772,772,13,western europe
+773,773,13,western european
+775,775,9,worcester
+777,777,9,yorkshire
+778,778,2,yoruba peoples
+780,780,12,zurich
+103,103,15,achaemenid
+104,104,15,acheen
+105,105,15,acheulean
+118,118,15,alanic
+134,134,15,ansbach
+136,136,15,apulian
+172,172,15,beautiran
+179,179,15,boeotian
+183,183,15,bornean
+203,203,15,caeretan
+205,205,15,calima yotoco
+207,207,15,campanian
+210,210,15,canosan
+212,212,15,capuli
+213,213,15,carthaginian
+218,218,15,caughley
+226,226,15,chalcidian
+231,231,15,chimú
+241,241,15,chorrera
+244,244,15,chupicuaro
+246,246,15,cobridge
+271,271,15,dehua
+274,274,15,deruta
+282,282,15,dyak
+290,290,15,ecuadoran
+296,296,15,edomite
+298,298,15,elamite
+304,304,15,euboean
+310,310,15,faliscan
+337,337,15,frankenthal
+351,351,15,fürstenberg
+356,356,15,genucilia
+367,367,15,ghassulian
+368,368,15,gnathian
+369,369,15,gonia
+379,379,15,gubbio
+381,381,15,guler
+388,388,15,hattian
+390,390,15,helladic
+394,394,15,huastec
+398,398,15,höchst
+455,455,15,kholmogory
+458,458,15,kreussen
+459,459,15,königsberg
+461,461,15,laconian
+464,464,15,langobardic
+479,479,15,lucanian
+480,480,15,ludwigsburg
+481,481,15,lumajang
+491,491,15,manteño
+494,494,15,mechlin
+498,498,15,mennecy
+501,501,15,mewar
+503,503,15,mezcala
+506,506,15,mimbres
+508,508,15,mitanni
+509,509,15,mixtec
+515,515,15,montelupo
+519,519,15,moustiers
+521,521,15,muisca
+522,522,15,mulhausen
+526,526,15,nabataean
+527,527,15,nailsea
+543,543,15,netherlandish
+547,547,15,ngandjuk
+566,566,15,nymphenburg
+572,572,15,orléans
+573,573,15,ostrogothic
+578,578,15,paestan
+584,584,15,paracas
+588,588,15,pasiran
+605,605,15,pompeian
+607,607,15,populonia
+611,611,15,praenestine
+617,617,15,qajar
+619,619,15,quimbaya
+621,621,15,raeren
+623,623,15,remojadas
+624,624,15,rhenish
+635,635,15,salinar
+639,639,15,sarmatian
+640,640,15,sarreguemines
+641,641,15,sasanian
+646,646,15,sceaux
+649,649,15,seleucid
+657,657,15,sienese
+659,659,15,sinceny
+660,660,15,skyros
+702,702,15,sèvres
+703,703,15,tairona
+707,707,15,tarentine
+708,708,15,taíno
+709,709,15,teano
+725,725,15,tiwanaku
+726,726,15,tlatilco
+729,729,15,topará
+730,730,15,tsimshian
+737,737,15,ubaid
+742,742,15,urartian
+756,756,15,veraguas
+757,757,15,verbilki
+760,760,15,vicús
+764,764,15,villanovan
+768,768,15,visigothic
+769,769,15,vulci
+774,774,15,westerwald
+776,776,15,würzburg
+779,779,15,zenú
