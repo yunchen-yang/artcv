@@ -193,7 +193,7 @@ class Trainer:
                         if self.printout:
                             print("After %i epochs, loss is %f and prediction accuracy is %f."
                                   % (epoch_idx, current_loss_train, current_accuracy_train))
-                if bool(self.extra_epochs_mc) & (epoch_idx + 1) % self.train_mc_step == 0:
+                if bool(self.extra_epochs_mc) & ((epoch_idx + 1) % self.train_mc_step == 0):
                     self.train_mc(lr=mc_lr, **train_mc_kwargs)
                     epoch_count_mc += 1
                     if epoch_count_mc % step_mc == 0 & reduce_lr_mc:
@@ -340,7 +340,7 @@ class Trainer:
                                                 y3.long(),
                                                 y4.long()), dim=1)]
                 else:
-                    x = data_tensors
+                    x, _, _, _, _, _ = data_tensors
                     if self.use_cuda and torch.cuda.is_available():
                         x = x.cuda()
                 if return_hier_pred:
@@ -408,7 +408,7 @@ class Trainer:
                                                 y3.long(),
                                                 y4.long()), dim=1)]
                 else:
-                    x = data_tensors
+                    x, _, _, _, _, _ = data_tensors
                     if self.use_cuda and torch.cuda.is_available():
                         x = x.cuda()
                 y_concat_pred = regularized_pred(self.model.get_concat_probs(x).detach().cpu().numpy(),
@@ -482,3 +482,54 @@ class Trainer:
         plt.xlabel('Number of epochs')
         plt.ylabel('Accuracy')
         plt.show()
+
+    @torch.no_grad()
+    def get_features(self, tag, return_gt=True):
+        self.model.eval()
+        features_tem = []
+
+        if tag == 'test':
+            _dataloader = self.dataloader_test
+            for data_tensors in _dataloader:
+                x = data_tensors
+                if self.use_cuda and torch.cuda.is_available():
+                    x = x.cuda()
+                y_concat_prob = self.model.inference(x)
+                features_tem += [y_concat_prob]
+            features_array = torch.cat(features_tem).detach().cpu().numpy()
+            self.model.train()
+            return features_array
+        else:
+            ground_truth = []
+            if tag == 'train':
+                _dataloader = self.dataloader_train
+            elif tag == 'val':
+                _dataloader = self.dataloader_val
+            elif tag == 'all':
+                _dataloader = self.dataloader_all
+            else:
+                raise ValueError('Invalid tag!')
+            for data_tensors in _dataloader:
+                if return_gt:
+                    x, y0, y1, y2, y3, y4 = data_tensors
+                    if self.use_cuda and torch.cuda.is_available():
+                        x = x.cuda()
+                        y0 = y0.cuda()
+                        y1 = y1.cuda()
+                        y2 = y2.cuda()
+                        y3 = y3.cuda()
+                        y4 = y4.cuda()
+                    ground_truth += [torch.cat((y0.long(),
+                                                y1.long(),
+                                                F.one_hot(y2, num_classes=6).squeeze()[:, 1:].long(),
+                                                y3.long(),
+                                                y4.long()), dim=1)]
+                else:
+                    x, _, _, _, _, _ = data_tensors
+                    if self.use_cuda and torch.cuda.is_available():
+                        x = x.cuda()
+                y_concat_prob = self.model.inference(x)
+                features_tem += [y_concat_prob]
+            features_array = torch.cat(features_tem).detach().cpu().numpy()
+            self.model.train()
+            return torch.cat(ground_truth).detach().cpu().numpy(), features_array
